@@ -977,6 +977,41 @@ load_bootstrap(RnCtx* ctx, const uint8_t* bin){
     RnLeave(ctx, &frame);
 }
 
+static void
+parse_bootstrap(RnCtx* ctx){
+    Value frame;
+    Value cur;
+    Value lib;
+    Value libsym;
+    Value sym;
+    Value code;
+    Value tmp;
+    // Library = (<lib> ...)
+    // lib = #(libname libsym import* imports exports VMseq mac* VMmac)
+    RnEnter(ctx, &frame);
+    RnValueLink(ctx, &cur);
+    RnValueLink(ctx, &lib);
+    RnValueLink(ctx, &libsym);
+    RnValueLink(ctx, &sym);
+    RnValueLink(ctx, &code);
+    RnValueLink(ctx, &tmp);
+    RnHashtable(ctx, &ctx->ht_libcode, HTC_EQ_HASHTABLE);
+    RnHashtable(ctx, &ctx->ht_macro, HTC_EQ_HASHTABLE);
+
+    RnValueRef(ctx, &cur, ctx->bootstrap.value, ctx->bootstrap.type);
+    while(1){
+        if(cur.type == VT_ZONE0 && cur.value.as_zone0 == ZZ_NIL){
+            break;
+        }
+        RnRibRef(ctx, &lib, &cur, 0);
+        RnRibRef(ctx, &cur, &cur, 1);
+        RnVectorRef(ctx, &libsym, &lib, 1);
+        RnRibRef(ctx, &tmp, &libsym, 1);
+        printf("Loading %s ...\n", tmp.value.as_string->str);
+    }
+    RnLeave(ctx, &frame);
+}
+
 /* VM */
 
 /* main */
@@ -1007,6 +1042,7 @@ main(int ac, char** av){
 
     RnCtxInit(&ctx);
     load_bootstrap(&ctx, bootstrap);
+    parse_bootstrap(&ctx);
 
     return 0;
 }
