@@ -739,11 +739,11 @@ get_leb128(const uint8_t** cur){
         b = *m;
         m++;
         if(b < 128){ /* Term */
-            acc += ((b * mult) + acc);
+            acc += (b * mult);
             break;
         }else{
             b -= 128;
-            acc += ((b * mult) + acc);
+            acc += (b * mult);
         }
         mult *= 128;
     }
@@ -854,6 +854,7 @@ load_bootstrap(RnCtx* ctx, const uint8_t* bin){
     for(i = 0; i != chars; i++){
         RnChar(ctx, &v[cur+i], get_leb128(&p));
     }
+    cur += chars;
 
     /* Numbers */
     for(i = 0; i != numbers; i++){
