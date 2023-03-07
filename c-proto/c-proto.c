@@ -264,6 +264,7 @@ RnString(RnCtx* ctx, Value* out, const char* name, size_t len){
     memcpy(buf, name, len);
     buf[len] = 0;
     str->str = buf;
+    str->len = len;
     v.as_string = str;
     RnValueRef(ctx, out, v, VT_STRING);
 }
