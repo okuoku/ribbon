@@ -1,8 +1,11 @@
 /* Ribbon Scheme proto */
 #include <stdint.h>
 #include <stdlib.h>
+#define __STDC_FORMAT_MACROS
+#include <inttypes.h>
 #include <stdio.h>
 #include <string.h>
+#include <math.h>
 
 /* Heap */
 
@@ -1012,7 +1015,52 @@ parse_bootstrap(RnCtx* ctx){
     RnLeave(ctx, &frame);
 }
 
+#include "prims.inc.h"
+
 /* VM */
+
+static void
+enter_externals(RnCtx* ctx){
+    Value symnamestr;
+    Value sym;
+    Value zero;
+    Value one;
+    Value addr;
+    Value obj;
+    Value tmp;
+    size_t i;
+    i = 0;
+    RnValueLink(ctx, &symnamestr);
+    RnValueLink(ctx, &sym);
+    RnValueLink(ctx, &addr);
+    RnValueLink(ctx, &zero);
+    RnValueLink(ctx, &one);
+    RnValueLink(ctx, &obj);
+    RnValueLink(ctx, &tmp);
+    RnInt64(ctx, &zero, 0);
+    RnInt64(ctx, &one, 1);
+    while(vm_externals[i].symname){
+        /* Construct VM function */
+        RnInt64(ctx, &addr, (uintptr_t)vm_externals[i].func);
+        RnRib(ctx, &obj, &addr, &zero, &one);
+        RnString(ctx, &symnamestr, 
+                 vm_externals[i].symname, vm_externals[i].namelen);
+        RnUninternedSymbol(ctx, &sym, &symnamestr);
+        RnHashtableRef(ctx, &tmp, &ctx->ht_global, &symnamestr, &sym);
+        if(tmp.value.as_rib == sym.value.as_rib){
+            RnHashtableSet(ctx, &ctx->ht_global, &symnamestr, &sym);
+        }
+        RnRibSet(ctx, &tmp, &obj, 0);
+        i++;
+    }
+    RnValueUnlink(ctx, &tmp);
+    RnValueUnlink(ctx, &obj);
+    RnValueUnlink(ctx, &one);
+    RnValueUnlink(ctx, &zero);
+    RnValueUnlink(ctx, &addr);
+    RnValueUnlink(ctx, &sym);
+    RnValueUnlink(ctx, &symnamestr);
+}
 
 /* main */
 int
@@ -1043,6 +1091,7 @@ main(int ac, char** av){
     RnCtxInit(&ctx);
     load_bootstrap(&ctx, bootstrap);
     parse_bootstrap(&ctx);
+    enter_externals(&ctx);
 
     return 0;
 }

@@ -1,3 +1,4 @@
+
 struct ObjHeader_s {
     struct ObjHeader_s* gc_prev;
     struct ObjHeader_s* gc_next;
@@ -146,4 +147,10 @@ struct RnCtx_s { /* Ribbon Context */
 
 typedef struct RnCtx_s RnCtx;
 
+struct RnVmEx_s {
+    const char* symname;
+    size_t namelen;
+    void (*func)(RnCtx* ctx, int argc, Value* stack);
+};
 
+typedef struct RnVmEx_s RnVmEx;
