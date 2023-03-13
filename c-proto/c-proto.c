@@ -1,3 +1,4 @@
+//#define TRACE
 /* Ribbon Scheme proto */
 #include <stdint.h>
 #include <stdlib.h>
@@ -124,7 +125,9 @@ RnRibRef(RnCtx* ctx, Value* out, Value* obj, int field){
 void 
 RnRib(RnCtx* ctx, Value* out, Value* field0, Value* field1, Value* field2){
     ObjRib* r;
+    Value v;
     ValueContainer vc;
+    RnValueLink(ctx, &v);
     r = (ObjRib*)malloc(sizeof(ObjRib));
     if(!r){
         abort();
@@ -132,10 +135,12 @@ RnRib(RnCtx* ctx, Value* out, Value* field0, Value* field1, Value* field2){
     RnObjHeaderInit(ctx, (ObjHeader*)r);
     r->type[0] = r->type[1] = r->type[2] = VT_EMPTY;
     vc.as_rib = r;
-    RnValueRef(ctx, out, vc, VT_RIB);
-    RnRibSet(ctx, out, field0, 0);
-    RnRibSet(ctx, out, field1, 1);
-    RnRibSet(ctx, out, field2, 2);
+    RnValueRef(ctx, &v, vc, VT_RIB);
+    RnRibSet(ctx, &v, field0, 0);
+    RnRibSet(ctx, &v, field1, 1);
+    RnRibSet(ctx, &v, field2, 2);
+    RnValueRef(ctx, out, v.value, VT_RIB);
+    RnValueUnlink(ctx, &v);
 }
 
 void
@@ -651,13 +656,13 @@ RnHashtable(RnCtx* ctx, Value* out, HashtableClass htc){
     switch(htc){
         case HTC_EQ_HASHTABLE:
         case HTC_EQV_HASHTABLE:
+        case HTC_SYMBOL_HASHTABLE:
             type = HT_EQV;
             break;
         case HTC_INTEGER_HASHTABLE:
             type = HT_INTKEY;
             break;
         case HTC_STRING_HASHTABLE:
-        case HTC_SYMBOL_HASHTABLE:
             type = HT_BLOBKEY;
             break;
         default:
@@ -723,6 +728,7 @@ RnCtxInit(RnCtx* newctx){
     newctx->current_frame = 0;
     RnEnter(newctx, &newctx->ctx_root);
     RnValueLink(newctx, &newctx->ht_global);
+    RnValueLink(newctx, &newctx->ht_libinfo);
     RnValueLink(newctx, &newctx->ht_libcode);
     RnValueLink(newctx, &newctx->ht_macro);
     RnValueLink(newctx, &newctx->bootstrap);
@@ -865,17 +871,25 @@ load_bootstrap(RnCtx* ctx, const uint8_t* bin){
         switch(proto){
             case 1: /* Positive integer */
                 val = get_leb128(&p);
+                printf("Exact: [%ld]\n", val);
                 RnInt64(ctx, &v[cur+i], val);
                 break;
             case 2: /* Negative integer */
                 val = (int64_t)0 - get_leb128(&p);
+                printf("Exact: [%ld]\n", val);
                 RnInt64(ctx, &v[cur+i], val);
                 break;
             case 3: /* Scheme number */
                 num = get_cstr(&p);
                 d = strtod(num, NULL);
+                if(d == 0){
+                    printf("FIXME: [%s] yielded exact zero?\n", num);
+                    RnInt64(ctx, &v[cur+i], 0);
+                }else{
+                    printf("Inexact: [%s]\n", num);
+                    RnDouble(ctx, &v[cur+i], d);
+                }
                 free(num);
-                RnDouble(ctx, &v[cur+i], d);
                 break;
             default:
                 abort();
@@ -889,12 +903,13 @@ load_bootstrap(RnCtx* ctx, const uint8_t* bin){
         nam = get_cstr(&p); /* FIXME: use dedicated string function */
         namlen = strlen(nam);
         RnString(ctx, &symnam, nam, namlen);
-        free(nam);
         RnUninternedSymbol(ctx, &sym, &symnam);
         RnHashtableRef(ctx, &tmp, &ctx->ht_global, &symnam, &sym);
         if(tmp.value.as_rib == sym.value.as_rib){
+            //printf("Symbol = [%s] => %p\n", nam, (void*)sym.value.as_rib);
             RnHashtableSet(ctx, &ctx->ht_global, &symnam, &sym);
         }
+        free(nam);
         RnValueRef(ctx, &v[cur+i], sym.value, sym.type);
     }
     cur += symbols;
@@ -980,6 +995,493 @@ load_bootstrap(RnCtx* ctx, const uint8_t* bin){
     RnLeave(ctx, &frame);
 }
 
+/* VM */
+
+static void
+emergency_print(RnCtx* ctx, Value* v){
+    Value tmp;
+    size_t i;
+    if(! v){
+        return;
+    }
+    RnValueLink(ctx, &tmp);
+    switch(v->type){
+        case VT_EMPTY:
+            fprintf(stderr, "[EMPTY]");
+            break;
+        case VT_ZONE0:
+            switch(v->value.as_zone0){
+                case ZZ_NIL:
+                    fprintf(stderr, "[NIL]");
+                    break;
+                case ZZ_TRUE:
+                    fprintf(stderr, "#t");
+                    break;
+                case ZZ_FALSE:
+                    fprintf(stderr, "#f");
+                    break;
+                case ZZ_EOF_OBJECT:
+                    fprintf(stderr, "#<eof-object>");
+                    break;
+                default:
+                    fprintf(stderr, "[ZZ:%d]",(int)v->value.as_zone0);
+                    break;
+            }
+            break;
+        case VT_INT64:
+            fprintf(stderr, "%" PRId64, v->value.as_int64);
+            break;
+        case VT_DOUBLE:
+            fprintf(stderr, "%f", v->value.as_double);
+            break;
+        case VT_CHAR:
+            // FIXME: UTF8
+            fprintf(stderr, "%c", v->value.as_char);
+            break;
+        case VT_RIB:
+            if(v->value.as_rib->type[2] == VT_INT64 &&
+               v->value.as_rib->field[2].as_int64 == 1){
+                fprintf(stderr, "#<procedure>");
+            }else{
+                fprintf(stderr, "#<");
+                RnRibRef(ctx, &tmp, v, 0);
+                emergency_print(ctx, &tmp);
+                fprintf(stderr, " ");
+                RnRibRef(ctx, &tmp, v, 1);
+                emergency_print(ctx, &tmp);
+                fprintf(stderr, " ");
+                RnRibRef(ctx, &tmp, v, 2);
+                emergency_print(ctx, &tmp);
+                fprintf(stderr, ">");
+            }
+            break;
+        case VT_VECTOR:
+        case VT_SIMPLE_STRUCT:
+            for(i=0;i!=v->value.as_vector->length;i++){
+                if(i==0){
+                    fprintf(stderr, "#(");
+                }else{
+                    fprintf(stderr, " ");
+                }
+                RnVectorRef(ctx, &tmp, v, i);
+                emergency_print(ctx, &tmp);
+            }
+            fprintf(stderr, ")");
+            break;
+        case VT_HASHTABLE:
+            fprintf(stderr, "#<HASHTABLE>");
+            break;
+        case VT_STRING:
+            fprintf(stderr, "\"%s\"", v->value.as_string->str);
+            break;
+        case VT_BYTEVECTOR:
+            fprintf(stderr, "#<BYTEVECTOR>");
+            break;
+        case VT_ROOT:
+            fprintf(stderr, "#<ROOT>");
+            break;
+        default:
+            fprintf(stderr, "#<UNKNOWN:%d>", (int)v->type);
+            break;
+
+    }
+    RnValueUnlink(ctx, &tmp);
+}
+
+struct vmstate_s {
+    Value stack;
+    Value pc;
+    Value result;
+    int exit_mode;
+    int vals;
+    /* temps */
+    Value reg;
+    Value opnd;
+    Value zero;
+};
+
+static void
+list_tail(RnCtx* ctx, Value* v, size_t d){
+    size_t i;
+    for(i=0;i!=d;i++){
+        RnRibRef(ctx, v, v, 1);
+    }
+}
+
+static void
+get_cont(RnCtx* ctx, struct vmstate_s* state){
+    while(1){
+        if(state->stack.type != VT_RIB){
+            break;
+        }
+        if(state->stack.value.as_rib->type[2] == VT_RIB){
+            return;
+        }
+        RnRibRef(ctx, &state->stack, &state->stack, 1);
+    }
+}
+
+static void /* => lookup(opnd) to reg */
+get_var(RnCtx* ctx, struct vmstate_s* state){
+    if(state->opnd.type == VT_INT64){
+        RnValueRef(ctx, &state->reg, state->stack.value, state->stack.type);
+        list_tail(ctx, &state->reg, state->opnd.value.as_int64);
+        RnRibRef(ctx, &state->reg, &state->reg, 0);
+    }else{
+#ifdef TRACE
+        if(state->opnd.value.as_rib->type[1] == VT_INT64){
+            printf("GLBL trampoline\n");
+        }else{
+            printf("GLBL: %s\n", state->opnd.value.as_rib->field[1].as_string->str);
+        }
+#endif
+        RnRibRef(ctx, &state->reg, &state->opnd, 0);
+    }
+}
+
+static void
+call_lambda(RnCtx* ctx, struct vmstate_s* state){
+    Value tmp;
+    Value acc;
+    ssize_t argnc, layout, nargs, res;
+    RnValueLink(ctx, &tmp);
+    RnValueLink(ctx, &acc);
+    /* reg = proc */
+    /* opnd <= code(field0 of proc) */
+    RnRibRef(ctx, &state->opnd, &state->reg, 0);
+    /* reg = newcont */
+    RnRib(ctx, &state->reg, &state->zero, &state->reg, &state->zero);
+    /* Construct Stack */
+    if(state->opnd.type != VT_RIB){
+        abort();
+    }
+    if(state->opnd.value.as_rib->type[0] != VT_INT64){
+        abort();
+    }
+    layout = state->opnd.value.as_rib->field[0].as_int64;
+    argnc = (state->vals >= 0 && layout < 0) ? state->vals + 1 + layout : 0;
+    nargs = (layout < 0) ? -layout : layout;
+    if((state->vals >= 0) && argnc < 0 && state->vals < nargs){
+        abort();
+    }
+    /* Construct rest argument on acc */
+    RnZone0(ctx, &acc, ZZ_NIL);
+    for(res = argnc; res != 0; res--){
+        RnRibRef(ctx, &tmp, &state->stack, 0);
+        /*
+        fprintf(stderr, "PUSHr:\n");
+        emergency_print(ctx, &acc);
+        fprintf(stderr, "\n");
+        */
+        RnRibRef(ctx, &state->stack, &state->stack, 1);
+        RnCons(ctx, &acc, &tmp, &acc);
+    }
+    if(layout < 0){
+#ifdef TRACE
+        fprintf(stderr, "PUSHc:\n");
+        emergency_print(ctx, &acc);
+        fprintf(stderr, "\n");
+#endif
+        /* Push rest aguments as a list if required */
+        RnCons(ctx, &state->stack, &acc, &state->stack);
+    }
+    /* acc = new stack, init as newcont */
+    RnValueRef(ctx, &acc, state->reg.value, state->reg.type);
+    for(res = nargs; res != 0; res--){
+        RnRibRef(ctx, &tmp, &state->stack, 0);
+#ifdef TRACE
+        fprintf(stderr, "PUSHa:\n");
+        emergency_print(ctx, &tmp);
+        fprintf(stderr, "\n");
+#endif
+        RnRibRef(ctx, &state->stack, &state->stack, 1);
+        RnCons(ctx, &acc, &tmp, &acc);
+    }
+#ifdef TRACE
+    fprintf(stderr, "STA:\n");
+    emergency_print(ctx, &acc);
+    fprintf(stderr, "\n");
+#endif
+    /* Check if tail call */
+    if(state->pc.type == VT_RIB){
+        /* has rib as cont., so save stack and continuation on new stack */
+        RnRibSet(ctx, &state->reg, &state->stack, 0);
+        RnRibSet(ctx, &state->reg, &state->pc, 2);
+    }else{
+        get_cont(ctx, state);
+        /* Concat old stack frame on new cont */
+        RnRibRef(ctx, &tmp, &state->stack, 0);
+        RnRibSet(ctx, &state->reg, &tmp, 0);
+        RnRibRef(ctx, &tmp, &state->stack, 2);
+        RnRibSet(ctx, &state->reg, &tmp, 2);
+    }
+    /* Set new pc and stack */
+    state->vals = -1;
+    RnRibRef(ctx, &state->pc, &state->opnd, 2);
+    RnValueRef(ctx, &state->stack, acc.value, acc.type);
+    /*
+    fprintf(stderr, "ST:\n");
+    emergency_print(ctx, &state->stack);
+    fprintf(stderr, "\n");
+    */
+    RnValueUnlink(ctx, &acc);
+    RnValueUnlink(ctx, &tmp);
+}
+
+/* 1: $vm-exit (VM) */
+/* 2: apply-values (VM) */
+
+static void
+call_apply_values(RnCtx* ctx, struct vmstate_s* state){
+    int vals;
+    Value values;
+    Value consumer;
+    Value trampoline;
+    RnValueLink(ctx, &trampoline);
+    RnValueLink(ctx, &consumer);
+    RnValueLink(ctx, &values);
+    /* Receive args */
+    RnRibRef(ctx, &values, &state->stack, 0);
+    RnRibRef(ctx, &state->stack, &state->stack, 1);
+    RnRibRef(ctx, &consumer, &state->stack, 0);
+    RnRibRef(ctx, &state->stack, &state->stack, 1);
+
+    /* Construct trampoline */
+    RnRib(ctx, &trampoline, &consumer, &state->zero, &state->zero);
+    RnRib(ctx, &trampoline, &state->zero, &trampoline, &state->pc);
+
+    if(values.type == VT_RIB && 
+       values.value.as_rib->type[2] == VT_INT64 &&
+       values.value.as_rib->field[2].as_int64 == 6){
+        /* Receive values from values object */
+        vals = 0;
+        RnRibRef(ctx, &values, &values, 0);
+        while(1){
+            if(values.type == VT_ZONE0 && values.value.as_zone0 == ZZ_NIL){
+                break;
+            }
+            RnRibRef(ctx, &state->reg, &values, 0);
+            RnRibRef(ctx, &values, &values, 1);
+#ifdef TRACE
+            fprintf(stderr, "ARG(%d):\n", vals);
+            emergency_print(ctx, &state->reg);
+            fprintf(stderr, "\n");
+#endif
+            RnCons(ctx, &state->stack, &state->reg, &state->stack);
+            vals ++;
+        }
+        state->vals = vals;
+    }else{
+        /* Standard apply */
+        state->vals = 1;
+        RnCons(ctx, &state->stack, &values, &state->stack);
+    }
+    /* Jump to trampoline */
+    RnValueRef(ctx, &state->pc, trampoline.value, trampoline.type);
+    RnValueUnlink(ctx, &values);
+    RnValueUnlink(ctx, &consumer);
+    RnValueUnlink(ctx, &trampoline);
+}
+
+static void
+call_vm_exit(RnCtx* ctx, struct vmstate_s* state){
+    RnRibRef(ctx, &state->result, &state->stack, 0);
+    RnRibRef(ctx, &state->stack, &state->stack, 1);
+    if(state->stack.type != VT_RIB){
+        abort();
+    }
+    if(state->stack.value.as_rib->type[0] != VT_INT64){
+        abort();
+    }
+    state->exit_mode = state->stack.value.as_rib->field[0].as_int64;
+}
+
+static void
+call_vmex(RnCtx* ctx, struct vmstate_s* state, RnVmExFunc func){
+    func(ctx, state->vals, &state->stack);
+}
+
+static int
+call_primitive(RnCtx* ctx, struct vmstate_s* state, 
+               int64_t protocol, int64_t ident){
+    int r;
+    r = 1; /* Continue by default */
+    switch(protocol){
+        case 2: /* internal primitives */
+            switch(ident){
+                case 1: /* $vm-exit */
+                    r = 0;
+                    call_vm_exit(ctx, state);
+                    break;
+                case 2: /* apply-values */
+                    call_apply_values(ctx, state);
+                    break;
+                default:
+                    abort();
+                    break;
+            }
+            break;
+        case 1: /* external primitives */
+            call_vmex(ctx, state, (RnVmExFunc)ident);
+            break;
+        default:
+            abort();
+            break;
+    }
+    /* For vmex, handle tail call here */
+    if(protocol == 1){
+        /* Check if tail call */
+        if(state->pc.type != VT_RIB){
+            /* Save primitive-returned stack */
+            RnValueRef(ctx, &state->reg, 
+                       state->stack.value, state->stack.type);
+            /* Find stack bottom */
+            get_cont(ctx, state);
+            /* Patch stack */
+            RnRibRef(ctx, &state->opnd, &state->stack, 0);
+            RnRibSet(ctx, &state->reg, &state->opnd, 1);
+            /* Replace pc and restore stack */
+            RnRibRef(ctx, &state->pc, &state->stack, 2);
+            RnValueRef(ctx, &state->stack, state->reg.value, state->reg.type);
+        }
+    }
+    return r;
+}
+
+static int /* Continue? */
+vmstep(RnCtx* ctx, struct vmstate_s* state){
+    int r;
+    int64_t inst;
+    RnRibRef(ctx, &state->reg, &state->pc, 0);
+    if(state->reg.type != VT_INT64){
+        abort();
+    }
+    inst = state->reg.value.as_int64;
+    RnRibRef(ctx, &state->opnd, &state->pc, 1);
+    RnRibRef(ctx, &state->pc, &state->pc, 2);
+    r = 1; /* Continue by default */
+
+#ifdef TRACE
+    printf("op = %ld\n", inst);
+#endif
+    
+    switch(inst){
+        case 0: /* Jump/Call */
+            get_var(ctx, state);
+            if(state->reg.type != VT_RIB){
+                abort();
+            }
+            if(state->reg.value.as_rib->type[1] == VT_ZONE0
+               && (state->reg.value.as_rib->field[1].as_zone0 == ZZ_FALSE ||
+                   state->reg.value.as_rib->field[1].as_zone0 == ZZ_TRUE)){
+                r = call_primitive(ctx, state,
+                                   state->reg.value.as_rib->field[1].as_zone0
+                                   == ZZ_FALSE ? 1 : 2,
+                                   state->reg.value.as_rib->field[0].as_int64);
+            }else{
+                /* Calling a lambda */
+                call_lambda(ctx, state);
+            }
+
+            break;
+        case 1: /* Set */
+            state->vals = -1;
+            if(state->opnd.type == VT_INT64){
+                RnValueRef(ctx, &state->reg, 
+                           state->stack.value, state->stack.type);
+                list_tail(ctx, &state->reg, state->opnd.value.as_int64);
+                RnRibRef(ctx, &state->opnd, &state->stack, 0);
+                RnRibSet(ctx, &state->reg, &state->opnd, 0);
+            }else{
+                RnRibRef(ctx, &state->reg, &state->stack, 0);
+                RnRibSet(ctx, &state->opnd, &state->reg, 0);
+            }
+            RnRibRef(ctx, &state->stack, &state->stack, 1);
+            break;
+        case 2: /* Get */
+            state->vals = -1;
+            get_var(ctx, state);
+            RnCons(ctx, &state->stack, &state->reg, &state->stack);
+            break;
+        case 3: /* Const(verb) */
+            state->vals = -1;
+            RnCons(ctx, &state->stack, &state->opnd, &state->stack);
+            break;
+        case 4: /* if */
+            state->vals = -1;
+            RnRibRef(ctx, &state->reg, &state->stack, 0);
+            RnRibRef(ctx, &state->stack, &state->stack, 1);
+            if(state->reg.type == VT_ZONE0 
+               && state->reg.value.as_zone0 == ZZ_FALSE){
+                /* False case, do nothing */
+            }else{
+                /* True case, alter next with opnd */
+                RnValueRef(ctx, &state->pc, 
+                           state->opnd.value, state->opnd.type);
+            }
+            break;
+        case 5: /* Enter(Yuni) */
+            if(state->opnd.type != VT_INT64){
+                abort();
+            }
+            state->vals = state->opnd.value.as_int64;
+            break;
+        case 6: /* Const(Obj) */
+            state->vals = -1;
+            RnCons(ctx, &state->stack, &state->opnd, &state->stack);
+#ifdef TRACE
+            fprintf(stderr, "Const: ");
+            emergency_print(ctx, &state->opnd);
+            fprintf(stderr, "\n");
+#endif
+            break;
+        default: /* Term */
+            return 0;
+    }
+    return r;
+}
+
+static void
+RnVmRun(RnCtx* ctx, Value* out, Value* code){
+    int cont;
+    Value frame;
+    Value seven;
+    Value zero;
+    struct vmstate_s state;
+    RnEnter(ctx, &frame);
+    RnValueLink(ctx, &state.stack);
+    RnValueLink(ctx, &state.pc);
+    RnValueLink(ctx, &state.result);
+    RnValueLink(ctx, &state.reg);
+    RnValueLink(ctx, &state.opnd);
+    RnValueLink(ctx, &state.zero);
+    RnValueLink(ctx, &seven);
+    RnValueLink(ctx, &zero);
+    RnInt64(ctx, &seven, 7);
+    RnInt64(ctx, &zero, 0);
+    RnInt64(ctx, &state.zero, 0);
+
+    RnRibRef(ctx, &state.pc, code, 0);
+    RnRibRef(ctx, &state.pc, &state.pc, 2);
+    /* Initial instruction #<7 0 0> */
+    RnRib(ctx, &state.stack, &seven, &zero, &zero);
+    /* Initial stack frame */
+    RnRib(ctx, &state.stack, &zero, &zero, &state.stack);
+    state.vals = -1;
+
+    while(1){
+        cont = vmstep(ctx, &state);
+        if(! cont){
+            break;
+        }
+    }
+
+
+    RnValueRef(ctx, out, state.result.value, state.result.type);
+    RnLeave(ctx, &frame);
+}
+
+
 static void
 parse_bootstrap(RnCtx* ctx){
     Value frame;
@@ -989,6 +1491,7 @@ parse_bootstrap(RnCtx* ctx){
     Value sym;
     Value code;
     Value tmp;
+    Value tmp2;
     // Library = (<lib> ...)
     // lib = #(libname libsym import* imports exports VMseq mac* VMmac)
     RnEnter(ctx, &frame);
@@ -998,8 +1501,10 @@ parse_bootstrap(RnCtx* ctx){
     RnValueLink(ctx, &sym);
     RnValueLink(ctx, &code);
     RnValueLink(ctx, &tmp);
-    RnHashtable(ctx, &ctx->ht_libcode, HTC_EQ_HASHTABLE);
-    RnHashtable(ctx, &ctx->ht_macro, HTC_EQ_HASHTABLE);
+    RnValueLink(ctx, &tmp2);
+    RnHashtable(ctx, &ctx->ht_libinfo, HTC_SYMBOL_HASHTABLE);
+    RnHashtable(ctx, &ctx->ht_libcode, HTC_SYMBOL_HASHTABLE);
+    RnHashtable(ctx, &ctx->ht_macro, HTC_SYMBOL_HASHTABLE);
 
     RnValueRef(ctx, &cur, ctx->bootstrap.value, ctx->bootstrap.type);
     while(1){
@@ -1010,56 +1515,138 @@ parse_bootstrap(RnCtx* ctx){
         RnRibRef(ctx, &cur, &cur, 1);
         RnVectorRef(ctx, &libsym, &lib, 1);
         RnRibRef(ctx, &tmp, &libsym, 1);
-        printf("Loading %s ...\n", tmp.value.as_string->str);
+        //printf("Loading %s ...\n", tmp.value.as_string->str);
+        /* Libinfo */
+        RnZone0(ctx, &tmp, ZZ_NIL);
+        RnVectorRef(ctx, &tmp2, &lib, 6);
+        RnCons(ctx, &tmp, &tmp2, &tmp);
+        RnVectorRef(ctx, &tmp2, &lib, 4);
+        RnCons(ctx, &tmp, &tmp2, &tmp);
+        RnVectorRef(ctx, &tmp2, &lib, 3);
+        RnCons(ctx, &tmp, &tmp2, &tmp);
+        RnHashtableSet(ctx, &ctx->ht_libinfo, &libsym, &tmp);
+        /* libcode */
+        RnVectorRef(ctx, &tmp, &lib, 5);
+        RnHashtableSet(ctx, &ctx->ht_libcode, &libsym, &tmp);
+        /* mac* */
+        RnVectorRef(ctx, &tmp, &lib, 7);
+        RnVmRun(ctx, &tmp2, &tmp);
+        RnVectorRef(ctx, &tmp, &lib, 6);
+        while(1){
+            if(tmp.type == VT_ZONE0 && tmp.value.as_zone0 == ZZ_NIL){
+                break;
+            }
+            RnRibRef(ctx, &sym, &tmp, 0);
+            RnRibRef(ctx, &tmp, &tmp, 1);
+            RnRibRef(ctx, &tmp2, &sym, 0);
+            RnHashtableSet(ctx, &ctx->ht_macro, &sym, &tmp2);
+        }
+
     }
+    RnLeave(ctx, &frame);
+}
+
+static void
+run_bootstrap(RnCtx* ctx){
+    Value frame;
+    Value cur;
+    Value lib;
+    Value code;
+    Value out;
+    RnEnter(ctx, &frame);
+    RnValueLink(ctx, &cur);
+    RnValueLink(ctx, &lib);
+    RnValueLink(ctx, &code);
+    RnValueLink(ctx, &out);
+
+    RnValueRef(ctx, &cur, ctx->bootstrap.value, ctx->bootstrap.type);
+    while(1){
+        if(cur.type == VT_ZONE0 && cur.value.as_zone0 == ZZ_NIL){
+            break;
+        }
+        RnRibRef(ctx, &lib, &cur, 0);
+        RnRibRef(ctx, &cur, &cur, 1);
+        RnVectorRef(ctx, &code, &lib, 5);
+        RnVmRun(ctx, &out, &code);
+    }
+
     RnLeave(ctx, &frame);
 }
 
 #include "prims.inc.h"
 
-/* VM */
-
 static void
 enter_externals(RnCtx* ctx){
+    /* Externals: #<addr #f 1> ro #<num #t 1> */
+    Value frame;
     Value symnamestr;
     Value sym;
     Value zero;
     Value one;
+    Value two;
     Value addr;
     Value obj;
     Value tmp;
+    Value t;
+    Value f;
     size_t i;
     i = 0;
+    RnEnter(ctx, &frame);
     RnValueLink(ctx, &symnamestr);
     RnValueLink(ctx, &sym);
     RnValueLink(ctx, &addr);
     RnValueLink(ctx, &zero);
     RnValueLink(ctx, &one);
+    RnValueLink(ctx, &two);
     RnValueLink(ctx, &obj);
     RnValueLink(ctx, &tmp);
+    RnValueLink(ctx, &t);
+    RnValueLink(ctx, &f);
     RnInt64(ctx, &zero, 0);
     RnInt64(ctx, &one, 1);
+    RnInt64(ctx, &two, 2);
+    RnZone0(ctx, &t, ZZ_TRUE);
+    RnZone0(ctx, &f, ZZ_FALSE);
     while(vm_externals[i].symname){
         /* Construct VM function */
         RnInt64(ctx, &addr, (uintptr_t)vm_externals[i].func);
-        RnRib(ctx, &obj, &addr, &zero, &one);
+        RnRib(ctx, &obj, &addr, &f, &one);
         RnString(ctx, &symnamestr, 
                  vm_externals[i].symname, vm_externals[i].namelen);
+        if(strlen(vm_externals[i].symname) != vm_externals[i].namelen){
+            abort();
+        }
         RnUninternedSymbol(ctx, &sym, &symnamestr);
         RnHashtableRef(ctx, &tmp, &ctx->ht_global, &symnamestr, &sym);
+        //printf("[%s] = %p\n", vm_externals[i].symname, (void*)tmp.value.as_rib);
         if(tmp.value.as_rib == sym.value.as_rib){
+            printf("New addition?? [%s]\n", vm_externals[i].symname);
             RnHashtableSet(ctx, &ctx->ht_global, &symnamestr, &sym);
         }
         RnRibSet(ctx, &tmp, &obj, 0);
         i++;
     }
-    RnValueUnlink(ctx, &tmp);
-    RnValueUnlink(ctx, &obj);
-    RnValueUnlink(ctx, &one);
-    RnValueUnlink(ctx, &zero);
-    RnValueUnlink(ctx, &addr);
-    RnValueUnlink(ctx, &sym);
-    RnValueUnlink(ctx, &symnamestr);
+    /* 1: $vm-exit */
+    RnRib(ctx, &obj, &one, &t, &one);
+    RnString(ctx, &symnamestr, "$vm-exit", sizeof("$vm-exit") - 1);
+    RnUninternedSymbol(ctx, &sym, &symnamestr);
+    RnHashtableRef(ctx, &tmp, &ctx->ht_global, &symnamestr, &sym);
+    if(tmp.value.as_rib == sym.value.as_rib){
+        RnHashtableSet(ctx, &ctx->ht_global, &symnamestr, &sym);
+    }
+    RnRibSet(ctx, &tmp, &obj, 0);
+
+    /* 2: apply-values */
+    RnRib(ctx, &obj, &two, &t, &one);
+    RnString(ctx, &symnamestr, "apply-values", sizeof("apply-values") - 1);
+    RnUninternedSymbol(ctx, &sym, &symnamestr);
+    RnHashtableRef(ctx, &tmp, &ctx->ht_global, &symnamestr, &sym);
+    if(tmp.value.as_rib == sym.value.as_rib){
+        RnHashtableSet(ctx, &ctx->ht_global, &symnamestr, &sym);
+    }
+    RnRibSet(ctx, &tmp, &obj, 0);
+
+    RnLeave(ctx, &frame);
 }
 
 /* main */
@@ -1090,8 +1677,9 @@ main(int ac, char** av){
 
     RnCtxInit(&ctx);
     load_bootstrap(&ctx, bootstrap);
-    parse_bootstrap(&ctx);
     enter_externals(&ctx);
+    parse_bootstrap(&ctx);
+    run_bootstrap(&ctx);
 
     return 0;
 }

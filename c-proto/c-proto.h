@@ -43,7 +43,7 @@ struct ObjString_s;
 struct ObjBytevector_s;
 struct ObjHashtable_s;
 union ValueContainer_u {
-    uint64_t as_int64;
+    int64_t as_int64;
     double as_double;
     int as_char;
     ValueZone0 as_zone0;
@@ -138,19 +138,23 @@ struct RnCtx_s { /* Ribbon Context */
     Value ctx_root;
     Value* current_frame;
 
-    /* GLobals (referred in ctx_root) */
+    /* Globals (referred in ctx_root) */
     Value ht_global; /* String hashtable */
+    Value ht_libinfo; /* libsym => info */
     Value ht_libcode; /* libsym => code */
     Value ht_macro; /* sym => code */
     Value bootstrap; /* Scheme object */
 };
 
+
 typedef struct RnCtx_s RnCtx;
+
+typedef void (*RnVmExFunc)(RnCtx* ctx, int argc, Value* stack);
 
 struct RnVmEx_s {
     const char* symname;
     size_t namelen;
-    void (*func)(RnCtx* ctx, int argc, Value* stack);
+    RnVmExFunc func;
 };
 
 typedef struct RnVmEx_s RnVmEx;
