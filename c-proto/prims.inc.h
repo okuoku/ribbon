@@ -659,6 +659,7 @@ ExProcedureP(RnCtx* ctx, Value* out, Value* x){
 static void
 ExValues(RnCtx* ctx, int argc, Value* stack){
     int i;
+    Value zero;
     Value six;
     Value tmp;
     Value tmp2;
@@ -667,7 +668,9 @@ ExValues(RnCtx* ctx, int argc, Value* stack){
     }else{
         RnValueLink(ctx, &tmp2);
         RnValueLink(ctx, &tmp);
+        RnValueLink(ctx, &zero);
         RnValueLink(ctx, &six);
+        RnInt64(ctx, &zero, 0);
         RnInt64(ctx, &six, 6);
         RnZone0(ctx, &tmp, ZZ_NIL);
         for(i=0;i!=argc;i++){
@@ -675,8 +678,10 @@ ExValues(RnCtx* ctx, int argc, Value* stack){
             RnCons(ctx, &tmp, &tmp2, &tmp);
             RnRibRef(ctx, stack, stack, 1);
         }
+        RnRib(ctx, &tmp, &tmp, &zero, &six);
         RnCons(ctx, stack, &tmp, stack);
         RnValueUnlink(ctx, &six);
+        RnValueUnlink(ctx, &zero);
         RnValueUnlink(ctx, &tmp);
         RnValueUnlink(ctx, &tmp2);
     }

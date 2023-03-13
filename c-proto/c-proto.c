@@ -1166,6 +1166,10 @@ call_lambda(RnCtx* ctx, struct vmstate_s* state){
     }
     /* Construct rest argument on acc */
     RnZone0(ctx, &acc, ZZ_NIL);
+#ifdef TRACE
+    fprintf(stderr, "vals = %d, layout = %zd, argnc = %zd, nargs = %zd\n", 
+            state->vals, layout, argnc, nargs);
+#endif
     for(res = argnc; res != 0; res--){
         RnRibRef(ctx, &tmp, &state->stack, 0);
         /*
