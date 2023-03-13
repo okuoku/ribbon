@@ -396,8 +396,12 @@ ht_eqv_eqv(Value* x, Value* y){
                 return 1;
             }
             break;
-        case VT_VECTOR: /* UNIMPL */
-        case VT_SIMPLE_STRUCT: /* UNIMPL */
+        case VT_VECTOR:
+        case VT_SIMPLE_STRUCT:
+            if(x->value.as_vector == y->value.as_vector){
+                return 1;
+            }
+            break;
         case VT_HASHTABLE: /* UNIMPL */
         default:
             abort();
@@ -424,8 +428,9 @@ ht_hash_eqv(Value* x){
             return (uintptr_t)x->value.as_bytevector;
         case VT_RIB:
             return (uintptr_t)x->value.as_rib;
-        case VT_VECTOR: /* UNIMPL */
-        case VT_SIMPLE_STRUCT: /* UNIMPL */
+        case VT_VECTOR:
+        case VT_SIMPLE_STRUCT:
+            return (uintptr_t)x->value.as_vector;
         case VT_HASHTABLE: /* UNIMPL */
         default:
             abort();
