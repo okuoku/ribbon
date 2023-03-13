@@ -761,7 +761,7 @@ ExUtf8ToString_3_1(RnCtx* ctx, Value* out, Value* bv, Value* start, Value* end){
         abort();
     }
     istart = start->value.as_int64;
-    iend = start->value.as_int64;
+    iend = end->value.as_int64;
     if(istart < 0){
         abort();
     }
