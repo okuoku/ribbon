@@ -3079,12 +3079,12 @@ ExVecAppend(RnCtx* ctx, int argc, Value* stack){
     s = (char*)malloc(total);
 
     /* Pass2: Pop args and generate total string */
-    loc = 0;
+    loc = total;
     for(i = 0; i != argc; i++){
         RnRibRef(ctx, &tmp, stack, 0);
         RnRibRef(ctx, stack, stack, 1);
+        loc -= tmp.value.as_string->len;
         memcpy(&s[loc], tmp.value.as_string->str, tmp.value.as_string->len);
-        loc += tmp.value.as_string->len;
     }
     RnString(ctx, &tmp, s, total);
     free(s);
