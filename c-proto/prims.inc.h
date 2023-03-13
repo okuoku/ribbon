@@ -1693,13 +1693,45 @@ ExAdd(RnCtx* ctx, int argc, Value* stack){
 }
 
 static void
+sub_itr(RnCtx* ctx, int rest, Value* out, Value* stack){
+    Value acc;
+    if(rest == 0){
+        RnRibRef(ctx, out, stack, 0);
+        RnRibRef(ctx, stack, stack, 1);
+    }else{
+        RnValueLink(ctx, &acc);
+        RnRibRef(ctx, &acc, stack, 0);
+        RnRibRef(ctx, stack, stack, 1);
+        sub_itr(ctx, rest - 1, out, stack);
+        if(out->type == VT_INT64){
+            if(acc.type == VT_INT64){
+                RnInt64(ctx, out, out->value.as_int64 - acc.value.as_int64);
+            }else if(acc.type == VT_DOUBLE){
+                RnDouble(ctx, out, 
+                         (double)out->value.as_int64 - acc.value.as_double);
+            }else{
+                abort();
+            }
+        }else if(out->type == VT_DOUBLE){
+            if(acc.type == VT_INT64){
+                RnDouble(ctx, out, 
+                         out->value.as_double - (double)acc.value.as_int64);
+            }else if(acc.type == VT_DOUBLE){
+                RnDouble(ctx, out, out->value.as_double - acc.value.as_double);
+            }else{
+                abort();
+            }
+        }else{
+            abort();
+        }
+        RnValueUnlink(ctx, &acc);
+    }
+}
+
+static void
 ExSub(RnCtx* ctx, int argc, Value* stack){
-    Value tmp;
     Value out;
     ValueContainer v;
-    int64_t i64,ii64;
-    double d64,dd64;
-    RnValueLink(ctx, &tmp);
     RnValueLink(ctx, &out);
     if(argc == 0){
         abort();
@@ -1718,48 +1750,10 @@ ExSub(RnCtx* ctx, int argc, Value* stack){
             abort();
         }
     }else{
-        RnRibRef(ctx, &out, stack, 0);
-        RnRibRef(ctx, stack, stack, 1);
-        argc--;
-        while(argc){
-            RnRibRef(ctx, &tmp, stack, 0);
-            RnRibRef(ctx, stack, stack, 1);
-            argc--;
-            if(out.type == VT_INT64){
-                i64 = out.value.as_int64;
-                if(tmp.type == VT_INT64){
-                    ii64 = tmp.value.as_int64;
-                    v.as_int64 = i64 - ii64;
-                    RnValueRef(ctx, &out, v, VT_INT64);
-                }else if(tmp.type == VT_DOUBLE){
-                    d64 = i64;
-                    dd64 = tmp.value.as_double;
-                    v.as_double = d64 - dd64;
-                    RnValueRef(ctx, &out, v, VT_DOUBLE);
-                }else{
-                    abort();
-                }
-            }else if(out.type == VT_DOUBLE){
-                d64 = out.value.as_double;
-                if(tmp.type == VT_INT64){
-                    dd64 = tmp.value.as_int64;
-                    v.as_double = d64 - dd64;
-                    RnValueRef(ctx, &out, v, VT_DOUBLE);
-                }else if(tmp.type == VT_DOUBLE){
-                    dd64 = tmp.value.as_double;
-                    v.as_double = d64 - dd64;
-                    RnValueRef(ctx, &out, v, VT_DOUBLE);
-                }else{
-                    abort();
-                }
-            }else{
-                abort();
-            }
-        }
+        sub_itr(ctx, argc - 1, &out, stack);
     }
     RnCons(ctx, stack, &out, stack);
     RnValueUnlink(ctx, &out);
-    RnValueUnlink(ctx, &tmp);
 }
 
 static void
