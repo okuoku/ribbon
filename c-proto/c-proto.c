@@ -871,12 +871,12 @@ load_bootstrap(RnCtx* ctx, const uint8_t* bin){
         switch(proto){
             case 1: /* Positive integer */
                 val = get_leb128(&p);
-                printf("Exact: [%ld]\n", val);
+                //printf("Exact: [%ld]\n", val);
                 RnInt64(ctx, &v[cur+i], val);
                 break;
             case 2: /* Negative integer */
                 val = (int64_t)0 - get_leb128(&p);
-                printf("Exact: [%ld]\n", val);
+                //printf("Exact: [%ld]\n", val);
                 RnInt64(ctx, &v[cur+i], val);
                 break;
             case 3: /* Scheme number */
@@ -886,7 +886,7 @@ load_bootstrap(RnCtx* ctx, const uint8_t* bin){
                     printf("FIXME: [%s] yielded exact zero?\n", num);
                     RnInt64(ctx, &v[cur+i], 0);
                 }else{
-                    printf("Inexact: [%s]\n", num);
+                    //printf("Inexact: [%s]\n", num);
                     RnDouble(ctx, &v[cur+i], d);
                 }
                 free(num);
