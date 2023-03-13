@@ -1910,13 +1910,13 @@ ExLt(RnCtx* ctx, int argc, Value* stack){
 
         if(tmp.type == VT_INT64){
             if(t == VT_INT64){
-                if(v.as_int64 < tmp.value.as_int64){
+                if(v.as_int64 <= tmp.value.as_int64){
                     r = 0;
                     break;
                 }
                 v.as_int64 = tmp.value.as_int64;
             }else if(t == VT_DOUBLE){
-                if(v.as_double < tmp.value.as_int64){
+                if(v.as_double <= tmp.value.as_int64){
                     r = 0;
                     break;
                 }
@@ -1926,14 +1926,14 @@ ExLt(RnCtx* ctx, int argc, Value* stack){
             }
         }else if(tmp.type == VT_DOUBLE){
             if(t == VT_INT64){
-                if(v.as_int64 < tmp.value.as_double){
+                if(v.as_int64 <= tmp.value.as_double){
                     r = 0;
                     break;
                 }
                 v.as_double = tmp.value.as_double;
                 t = VT_DOUBLE;
             }else if(t == VT_DOUBLE){
-                if(v.as_double < tmp.value.as_double){
+                if(v.as_double <= tmp.value.as_double){
                     r = 0;
                     break;
                 }
@@ -1985,13 +1985,13 @@ ExLtEq(RnCtx* ctx, int argc, Value* stack){
 
         if(tmp.type == VT_INT64){
             if(t == VT_INT64){
-                if(v.as_int64 <= tmp.value.as_int64){
+                if(v.as_int64 < tmp.value.as_int64){
                     r = 0;
                     break;
                 }
                 v.as_int64 = tmp.value.as_int64;
             }else if(t == VT_DOUBLE){
-                if(v.as_double <= tmp.value.as_int64){
+                if(v.as_double < tmp.value.as_int64){
                     r = 0;
                     break;
                 }
@@ -2001,14 +2001,14 @@ ExLtEq(RnCtx* ctx, int argc, Value* stack){
             }
         }else if(tmp.type == VT_DOUBLE){
             if(t == VT_INT64){
-                if(v.as_int64 <= tmp.value.as_double){
+                if(v.as_int64 < tmp.value.as_double){
                     r = 0;
                     break;
                 }
                 v.as_double = tmp.value.as_double;
                 t = VT_DOUBLE;
             }else if(t == VT_DOUBLE){
-                if(v.as_double <= tmp.value.as_double){
+                if(v.as_double < tmp.value.as_double){
                     r = 0;
                     break;
                 }
@@ -2029,81 +2029,6 @@ ExLtEq(RnCtx* ctx, int argc, Value* stack){
 
 static void
 ExGt(RnCtx* ctx, int argc, Value* stack){
-    int r;
-    Value tmp;
-    ValueContainer v;
-    ValueType t;
-    Value out;
-
-    RnValueLink(ctx, &tmp);
-    RnValueLink(ctx, &out);
-    if(argc == 0){
-        abort();
-    }
-    RnRibRef(ctx, &tmp, stack, 0);
-    if(tmp.type == VT_INT64){
-        v.as_int64 = tmp.value.as_int64;
-        t = VT_INT64;
-    }else if(tmp.type == VT_DOUBLE){
-        v.as_double = tmp.value.as_double;
-        t = VT_DOUBLE;
-    }else{
-        abort();
-    }
-    r = 1;
-    RnRibRef(ctx, stack, stack, 1);
-    argc--;
-    while(argc){
-        RnRibRef(ctx, &tmp, stack, 0);
-        RnRibRef(ctx, stack, stack, 1);
-        argc--;
-
-        if(tmp.type == VT_INT64){
-            if(t == VT_INT64){
-                if(v.as_int64 > tmp.value.as_int64){
-                    r = 0;
-                    break;
-                }
-                v.as_int64 = tmp.value.as_int64;
-            }else if(t == VT_DOUBLE){
-                if(v.as_double > tmp.value.as_int64){
-                    r = 0;
-                    break;
-                }
-                v.as_double = tmp.value.as_int64;
-            }else{
-                abort();
-            }
-        }else if(tmp.type == VT_DOUBLE){
-            if(t == VT_INT64){
-                if(v.as_int64 > tmp.value.as_double){
-                    r = 0;
-                    break;
-                }
-                v.as_double = tmp.value.as_double;
-                t = VT_DOUBLE;
-            }else if(t == VT_DOUBLE){
-                if(v.as_double > tmp.value.as_double){
-                    r = 0;
-                    break;
-                }
-                v.as_double = tmp.value.as_double;
-            }else{
-                abort();
-            }
-        }else{
-            abort();
-        }
-
-    }
-    to_bool(ctx, &out, r);
-    RnCons(ctx, stack, &out, stack);
-    RnValueUnlink(ctx, &out);
-    RnValueUnlink(ctx, &tmp);
-}
-
-static void
-ExGtEq(RnCtx* ctx, int argc, Value* stack){
     int r;
     Value tmp;
     ValueContainer v;
@@ -2159,6 +2084,81 @@ ExGtEq(RnCtx* ctx, int argc, Value* stack){
                 t = VT_DOUBLE;
             }else if(t == VT_DOUBLE){
                 if(v.as_double >= tmp.value.as_double){
+                    r = 0;
+                    break;
+                }
+                v.as_double = tmp.value.as_double;
+            }else{
+                abort();
+            }
+        }else{
+            abort();
+        }
+
+    }
+    to_bool(ctx, &out, r);
+    RnCons(ctx, stack, &out, stack);
+    RnValueUnlink(ctx, &out);
+    RnValueUnlink(ctx, &tmp);
+}
+
+static void
+ExGtEq(RnCtx* ctx, int argc, Value* stack){
+    int r;
+    Value tmp;
+    ValueContainer v;
+    ValueType t;
+    Value out;
+
+    RnValueLink(ctx, &tmp);
+    RnValueLink(ctx, &out);
+    if(argc == 0){
+        abort();
+    }
+    RnRibRef(ctx, &tmp, stack, 0);
+    if(tmp.type == VT_INT64){
+        v.as_int64 = tmp.value.as_int64;
+        t = VT_INT64;
+    }else if(tmp.type == VT_DOUBLE){
+        v.as_double = tmp.value.as_double;
+        t = VT_DOUBLE;
+    }else{
+        abort();
+    }
+    r = 1;
+    RnRibRef(ctx, stack, stack, 1);
+    argc--;
+    while(argc){
+        RnRibRef(ctx, &tmp, stack, 0);
+        RnRibRef(ctx, stack, stack, 1);
+        argc--;
+
+        if(tmp.type == VT_INT64){
+            if(t == VT_INT64){
+                if(v.as_int64 > tmp.value.as_int64){
+                    r = 0;
+                    break;
+                }
+                v.as_int64 = tmp.value.as_int64;
+            }else if(t == VT_DOUBLE){
+                if(v.as_double > tmp.value.as_int64){
+                    r = 0;
+                    break;
+                }
+                v.as_double = tmp.value.as_int64;
+            }else{
+                abort();
+            }
+        }else if(tmp.type == VT_DOUBLE){
+            if(t == VT_INT64){
+                if(v.as_int64 > tmp.value.as_double){
+                    r = 0;
+                    break;
+                }
+                v.as_double = tmp.value.as_double;
+                t = VT_DOUBLE;
+            }else if(t == VT_DOUBLE){
+                if(v.as_double > tmp.value.as_double){
                     r = 0;
                     break;
                 }
