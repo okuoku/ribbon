@@ -2,6 +2,7 @@
 struct ObjHeader_s {
     struct ObjHeader_s* gc_prev;
     struct ObjHeader_s* gc_next;
+    uintptr_t refcnt;
     uintptr_t gc_refinfo;
 };
 

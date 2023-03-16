@@ -12,6 +12,8 @@
 
 #include "c-proto.h"
 
+static void RnUnref(RnCtx* ctx, ValueContainer* obj, ValueType* type);
+
 void
 RnValueLink(RnCtx* ctx, Value* target){
     Value* last_root;
@@ -36,6 +38,7 @@ RnValueUnlink(RnCtx* ctx, Value* target){
     if(target->prev){
         target->prev->next = target->next;
     }
+    RnUnref(ctx, &target->value, &target->type);
 }
 
 void
@@ -65,17 +68,287 @@ RnLeave(RnCtx* ctx, Value* current_frame){
     ctx->current_frame = current_frame->prev;
 }
 
-void
-RnRef(RnCtx* ctx, ValueContainer obj, ValueType type){
-    (void)ctx;
-    (void)obj;
-    (void)type;
+static void RnObjHeaderUnlink(RnCtx* ctx, ObjHeader* header);
+
+#define DEBUG_FILLFREED
+
+#define REF_INDELETE UINTPTR_MAX
+
+static void
+RnRefRib(RnCtx* ctx, ObjRib* rib){
+    (void) ctx;
+    if(rib->header.refcnt == REF_INDELETE){
+        abort();
+    }
+    rib->header.refcnt++;
 }
 
-void
+static void
+RnUnrefRib(RnCtx* ctx, ObjRib* rib){
+    int i;
+    if(rib->header.refcnt == REF_INDELETE){
+        /* Do nothing, in loop */
+        return;
+    }
+    if(rib->header.refcnt == 0){
+        abort();
+    }
+    rib->header.refcnt--;
+    if(rib->header.refcnt == 0){
+        rib->header.refcnt = REF_INDELETE;
+        RnObjHeaderUnlink(ctx, &rib->header);
+        for(i=0;i!=3;i++){
+            RnUnref(ctx, &rib->field[i], &rib->type[i]);
+        }
+#ifdef DEBUG_FILLFREED
+        memset(rib, 0xcc, sizeof(ObjRib));
+#endif
+        free(rib);
+    }
+}
+
+static void
+RnRefVector(RnCtx* ctx, ObjVector* vector){
+    (void) ctx;
+    if(vector->header.refcnt == REF_INDELETE){
+        abort();
+    }
+    vector->header.refcnt++;
+}
+
+static void
+RnUnrefVector(RnCtx* ctx, ObjVector* vector){
+    size_t i;
+    if(vector->header.refcnt == REF_INDELETE){
+        /* Do nothing, in loop */
+        return;
+    }
+    if(vector->header.refcnt == 0){
+        abort();
+    }
+    vector->header.refcnt--;
+    if(vector->header.refcnt == 0){
+        vector->header.refcnt = REF_INDELETE;
+        RnObjHeaderUnlink(ctx, &vector->header);
+        for(i=0;i!=vector->length;i++){
+            RnUnref(ctx, &vector->values[i], &vector->types[i]);
+        }
+#ifdef DEBUG_FILLFREED
+        memset(vector->values, 0xcc, sizeof(ValueContainer) * vector->length);
+        memset(vector->types, 0xcc, sizeof(ValueType) * vector->length);
+#endif
+        free(vector->values);
+        free(vector->types);
+#ifdef DEBUG_FILLFREED
+        memset(vector, 0xcc, sizeof(ObjVector));
+#endif
+        free(vector);
+    }
+}
+
+static void
+RnRefString(RnCtx* ctx, ObjString* string){
+    (void) ctx;
+    if(string->refcnt == REF_INDELETE){
+        abort();
+    }
+    string->refcnt++;
+}
+
+static void
+RnUnrefString(RnCtx* ctx, ObjString* string){
+    (void) ctx;
+    if(string->refcnt == 0){
+        abort();
+    }
+    string->refcnt--;
+    if(string->refcnt == 0){
+#ifdef DEBUG_FILLFREED
+        memset((void*)string->str, 0xcc, string->len);
+#endif
+        free((void*)string->str);
+#ifdef DEBUG_FILLFREED
+        memset(string, 0xcc, sizeof(ObjString));
+#endif
+        free(string);
+    }
+}
+
+static void
+RnRefBytevector(RnCtx* ctx, ObjBytevector* bytevector){
+    (void) ctx;
+    if(bytevector->refcnt == REF_INDELETE){
+        abort();
+    }
+    bytevector->refcnt++;
+}
+
+static void
+RnUnrefBytevector(RnCtx* ctx, ObjBytevector* bytevector){
+    (void) ctx;
+    if(bytevector->refcnt == 0){
+        abort();
+    }
+    bytevector->refcnt--;
+    if(bytevector->refcnt == 0){
+#ifdef DEBUG_FILLFREED
+        memset(bytevector->buf, 0xcc, bytevector->len);
+#endif
+        free(bytevector->buf);
+#ifdef DEBUG_FILLFREED
+        memset(bytevector, 0xcc, sizeof(ObjBytevector));
+#endif
+        free(bytevector);
+    }
+}
+
+static void
+RnRefHashtable(RnCtx* ctx, ObjHashtable* hashtable){
+    (void) ctx;
+    if(hashtable->header.refcnt == REF_INDELETE){
+        abort();
+    }
+    hashtable->header.refcnt++;
+}
+
+static void
+RnUnrefHashtable(RnCtx* ctx, ObjHashtable* hashtable){
+    size_t i;
+    (void) ctx;
+    ValueType vt;
+    if(hashtable->header.refcnt == REF_INDELETE){
+        /* Do nothing, in loop */
+        return;
+    }
+    if(hashtable->header.refcnt == 0){
+        abort();
+    }
+    hashtable->header.refcnt--;
+    if(hashtable->header.refcnt == 0){
+        hashtable->header.refcnt = REF_INDELETE;
+        RnObjHeaderUnlink(ctx, &hashtable->header);
+        for(i=0;i!=hashtable->tablesize;i++){
+            if(hashtable->table[i].as_rib){
+                vt = VT_RIB;
+                RnUnref(ctx, &hashtable->table[i], &vt);
+            }
+        }
+#ifdef DEBUG_FILLFREED
+        memset(hashtable->table, 0xcc, sizeof(ValueContainer) * 
+               hashtable->tablesize);
+#endif
+        free(hashtable->table);
+
+        for(i=0;i!=hashtable->containercount;i++){
+            RnUnref(ctx, &hashtable->values[i], &hashtable->valuetypes[i]);
+            switch(hashtable->hashtable_type){
+                case HT_BLOBKEY:
+                    vt = VT_STRING;
+                    RnUnref(ctx, &hashtable->keys[i], &vt);
+                    break;
+                case HT_INTKEY:
+                    vt = VT_INT64;
+                    RnUnref(ctx, &hashtable->keys[i], &vt);
+                    break;
+                case HT_EQV:
+                    RnUnref(ctx, &hashtable->keys[i], 
+                            &hashtable->keytypes[i]);
+                    break;
+                default:
+                    abort();
+                    break;
+            }
+        }
+
+#ifdef DEBUG_FILLFREED
+        memset(hashtable->values, 0xcc, sizeof(ValueContainer) *
+               hashtable->containercount);
+        memset(hashtable->keys, 0xcc, sizeof(ValueContainer) *
+               hashtable->containercount);
+        if(hashtable->keytypes){
+            memset(hashtable->keytypes, 0xcc, sizeof(ValueType) *
+                   hashtable->containercount);
+        }
+#endif
+        free(hashtable->values);
+        free(hashtable->keys);
+        if(hashtable->keytypes){
+            free(hashtable->keytypes);
+        }
+#ifdef DEBUG_FILLFREED
+        memset(hashtable, 0xcc, sizeof(ObjHashtable));
+#endif
+        free(hashtable);
+    }
+}
+
+static void
+RnRef(RnCtx* ctx, ValueContainer obj, ValueType type){
+    switch(type){
+        case VT_EMPTY:
+            //abort();
+            break;
+        case VT_ZONE0:
+        case VT_INT64:
+        case VT_DOUBLE:
+        case VT_CHAR:
+            /* Do nothing */
+            break;
+        case VT_RIB:
+            RnRefRib(ctx, obj.as_rib);
+            break;
+        case VT_VECTOR:
+        case VT_SIMPLE_STRUCT:
+            RnRefVector(ctx, obj.as_vector);
+            break;
+        case VT_HASHTABLE:
+            RnRefHashtable(ctx, obj.as_hashtable);
+            break;
+        case VT_STRING:
+            RnRefString(ctx, obj.as_string);
+            break;
+        case VT_BYTEVECTOR:
+            RnRefBytevector(ctx, obj.as_bytevector);
+            break;
+        case VT_ROOT:
+            /* Do nothing, ctx always refs it */
+            break;
+        default:
+            abort();
+            break;
+    }
+}
+
+static void
 RnUnref(RnCtx* ctx, ValueContainer* obj, ValueType* type){
-    (void)ctx;
-    (void)obj;
+    switch(*type){
+        case VT_EMPTY:
+        case VT_ZONE0:
+        case VT_INT64:
+        case VT_DOUBLE:
+        case VT_CHAR:
+            /* Do nothing */
+            break;
+        case VT_RIB:
+            RnUnrefRib(ctx, obj->as_rib);
+            break;
+        case VT_VECTOR:
+        case VT_SIMPLE_STRUCT:
+            RnUnrefVector(ctx, obj->as_vector);
+            break;
+        case VT_HASHTABLE:
+            RnUnrefHashtable(ctx, obj->as_hashtable);
+            break;
+        case VT_STRING:
+            RnUnrefString(ctx, obj->as_string);
+            break;
+        case VT_BYTEVECTOR:
+            RnUnrefBytevector(ctx, obj->as_bytevector);
+            break;
+        case VT_ROOT:
+            /* Do nothing? Should be freed with ctx */
+            break;
+    }
     *type = VT_EMPTY;
 }
 
@@ -87,14 +360,21 @@ RnValueUnref(RnCtx* ctx, Value* target){
 
 void
 RnValueRef(RnCtx* ctx, Value* target, ValueContainer obj, ValueType type){
+    RnRef(ctx, obj, type);
     RnValueUnref(ctx, target);
     target->value = obj;
     target->type = type;
-    RnRef(ctx, obj, type);
 }
 
-void
+static void
 RnObjHeaderInit(RnCtx* ctx, ObjHeader* header){
+    (void)ctx;
+    (void)header;
+    header->refcnt = 0;
+}
+
+static void
+RnObjHeaderUnlink(RnCtx* ctx, ObjHeader* header){
     (void)ctx;
     (void)header;
 }
@@ -229,10 +509,10 @@ RnVectorSet(RnCtx* ctx, Value* target, Value* obj, size_t idx){
     if(idx >= vec->length){
         abort();
     }
+    RnRef(ctx, obj->value, obj->type);
     RnUnref(ctx, &vec->values[idx], &vec->types[idx]);
     vec->values[idx] = obj->value;
     vec->types[idx] = obj->type;
-    RnRef(ctx, vec->values[idx], vec->types[idx]);
 }
 
 void
@@ -1472,6 +1752,9 @@ RnVmRun(RnCtx* ctx, Value* out, Value* code){
 
     RnRibRef(ctx, &state.pc, code, 0);
     RnRibRef(ctx, &state.pc, &state.pc, 2);
+
+    /* Something default */
+    RnInt64(ctx, &state.result, -1234);
     /* Initial instruction #<7 0 0> */
     RnRib(ctx, &state.stack, &seven, &zero, &zero);
     /* Initial stack frame */
