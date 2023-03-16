@@ -263,6 +263,8 @@ RnUnrefHashtable(RnCtx* ctx, ObjHashtable* hashtable){
 #ifdef DEBUG_FILLFREED
         memset(hashtable->values, 0xcc, sizeof(ValueContainer) *
                hashtable->containercount);
+        memset(hashtable->valuetypes, 0xcc, sizeof(ValueType) *
+               hashtable->containercount);
         memset(hashtable->keys, 0xcc, sizeof(ValueContainer) *
                hashtable->containercount);
         if(hashtable->keytypes){
@@ -271,6 +273,7 @@ RnUnrefHashtable(RnCtx* ctx, ObjHashtable* hashtable){
         }
 #endif
         free(hashtable->values);
+        free(hashtable->valuetypes);
         free(hashtable->keys);
         if(hashtable->keytypes){
             free(hashtable->keytypes);
