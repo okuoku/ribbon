@@ -2610,9 +2610,9 @@ static void
 ExFilehandleReadEx(RnCtx* ctx, Value* out, Value* fh, Value* bv, Value* offs,
                    Value* len){
     FILE* fp;
-    int r;
     size_t reqlen;
     size_t readlen;
+    size_t poffs;
     if(fh->type != VT_INT64){
         abort();
     }
@@ -2626,27 +2626,23 @@ ExFilehandleReadEx(RnCtx* ctx, Value* out, Value* fh, Value* bv, Value* offs,
         abort();
     }
     reqlen = len->value.as_int64;
-    if(bv->value.as_bytevector->len < reqlen){
+    poffs = offs->value.as_int64;
+    if(bv->value.as_bytevector->len < reqlen + poffs){
         abort();
     }
 
     fp = (FILE*)(uintptr_t)fh->value.as_int64;
-    r = fseeko(fp, offs->value.as_int64, SEEK_SET);
-    if(r){
-        to_bool(ctx, out, 0);
-    }else{
-        readlen = fread(bv->value.as_bytevector->buf, reqlen, 1, fp);
-        RnInt64(ctx, out, readlen);
-    }
+    readlen = fread(bv->value.as_bytevector->buf + poffs, 1, reqlen, fp);
+    RnInt64(ctx, out, readlen);
 }
 
 static void
 ExFilehandleWrite(RnCtx* ctx, Value* out, Value* fh, Value* bv, Value* offs,
                   Value* len){
     FILE* fp;
-    int r;
     size_t reqlen;
     size_t writelen;
+    size_t poffs;
     if(fh->type != VT_INT64){
         abort();
     }
@@ -2660,24 +2656,14 @@ ExFilehandleWrite(RnCtx* ctx, Value* out, Value* fh, Value* bv, Value* offs,
         abort();
     }
     reqlen = len->value.as_int64;
-    if(bv->value.as_bytevector->len < reqlen){
+    poffs = offs->value.as_int64;
+    if(bv->value.as_bytevector->len < reqlen + poffs){
         abort();
     }
 
     fp = (FILE*)(uintptr_t)fh->value.as_int64;
-    if(fp == stdout || fp == stderr){
-        /* Don't seek on standard stream */
-        writelen = fwrite(bv->value.as_bytevector->buf, reqlen, 1, fp);
-        RnInt64(ctx, out, writelen);
-    }else{
-        r = fseeko(fp, offs->value.as_int64, SEEK_SET);
-        if(r){
-            to_bool(ctx, out, 0);
-        }else{
-            writelen = fwrite(bv->value.as_bytevector->buf, reqlen, 1, fp);
-            RnInt64(ctx, out, writelen);
-        }
-    }
+    writelen = fwrite(bv->value.as_bytevector->buf + poffs, 1, reqlen, fp);
+    RnInt64(ctx, out, writelen);
 }
 
 static void
