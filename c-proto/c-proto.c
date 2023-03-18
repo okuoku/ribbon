@@ -21,10 +21,12 @@ typedef SSIZE_T ssize_t;
 
 /* GC */
 
-static void RnForceFree(RnCtx* ctx, ValueContainer* obj, ValueType* type);
+static void RnDestroyRib(RnCtx* ctx, ObjRib* rib);
+static void RnDestroyVector(RnCtx* ctx, ObjVector* vector);
+static void RnDestroyHashtable(RnCtx* ctx, ObjHashtable* hashtable);
 
 #define REF_INDELETE UINTPTR_MAX
-#define GCCYCLE 1000
+#define GCCYCLE 100000
 
 static int gccounter = 0;
 
@@ -210,7 +212,6 @@ RnGc(RnCtx* ctx){
     ObjHeader* curnext;
     ObjHeader lastlive;
     ObjHeader garbages;
-    ValueContainer vc;
     ValueType t;
     uintptr_t gcrefcnt;
     uintptr_t typetag;
@@ -289,24 +290,25 @@ RnGc(RnCtx* ctx){
     }
 
     /* Do GC */
-    while(garbages.gc_next){
-        cur = garbages.gc_next;
+    cur = garbages.gc_next;
+    while(cur){
+        curnext = cur->gc_next;
         t = gettype(cur);
         switch(t){
             case VT_RIB:
-                vc.as_rib = (ObjRib*)cur;
+                RnDestroyRib(ctx, (ObjRib*)cur);
                 break;
             case VT_VECTOR:
-                vc.as_vector = (ObjVector*)cur;
+                RnDestroyVector(ctx, (ObjVector*)cur);
                 break;
             case VT_HASHTABLE:
-                vc.as_hashtable = (ObjHashtable*)cur;
+                RnDestroyHashtable(ctx, (ObjHashtable*)cur);
                 break;
             default:
                 abort();
                 break;
         }
-        RnForceFree(ctx, &vc, &t);
+        cur = curnext;
     }
 }
 
@@ -323,6 +325,7 @@ RnGcTick(RnCtx* ctx){
 
 
 static void RnUnref(RnCtx* ctx, ValueContainer* obj, ValueType* type);
+static void RnUnrefInDestroy(RnCtx* ctx, ValueContainer obj, ValueType type);
 
 void
 RnValueLink(RnCtx* ctx, Value* target){
@@ -393,6 +396,18 @@ RnRefRib(RnCtx* ctx, ObjRib* rib){
 }
 
 static void
+RnDestroyRib(RnCtx* ctx, ObjRib* rib){
+    int i;
+    for(i=0;i!=3;i++){
+        RnUnrefInDestroy(ctx, rib->field[i], rib->type[i]);
+    }
+#ifdef DEBUG_FILLFREED
+    memset(rib, 0xcc, sizeof(ObjRib));
+#endif
+    free(rib);
+}
+
+static void
 RnUnrefRib(RnCtx* ctx, ObjRib* rib){
     int i;
     if(rib->header.refcnt == REF_INDELETE){
@@ -423,6 +438,24 @@ RnRefVector(RnCtx* ctx, ObjVector* vector){
         abort();
     }
     vector->header.refcnt++;
+}
+
+static void
+RnDestroyVector(RnCtx* ctx, ObjVector* vector){
+    size_t i;
+    for(i=0;i!=vector->length;i++){
+        RnUnrefInDestroy(ctx, vector->values[i], vector->types[i]);
+    }
+#ifdef DEBUG_FILLFREED
+    memset(vector->values, 0xcc, sizeof(ValueContainer) * vector->length);
+    memset(vector->types, 0xcc, sizeof(ValueType) * vector->length);
+#endif
+    free(vector->values);
+    free(vector->types);
+#ifdef DEBUG_FILLFREED
+    memset(vector, 0xcc, sizeof(ObjVector));
+#endif
+    free(vector);
 }
 
 static void
@@ -518,6 +551,67 @@ RnRefHashtable(RnCtx* ctx, ObjHashtable* hashtable){
         abort();
     }
     hashtable->header.refcnt++;
+}
+
+static void
+RnDestroyHashtable(RnCtx* ctx, ObjHashtable* hashtable){
+    size_t i;
+    ValueType vt;
+    for(i=0;i!=hashtable->tablesize;i++){
+        if(hashtable->table[i].as_rib){
+            vt = VT_RIB;
+            RnUnref(ctx, &hashtable->table[i], &vt);
+        }
+    }
+#ifdef DEBUG_FILLFREED
+    memset(hashtable->table, 0xcc, sizeof(ValueContainer) * 
+           hashtable->tablesize);
+#endif
+    free(hashtable->table);
+
+    for(i=0;i!=hashtable->containercount;i++){
+        RnUnrefInDestroy(ctx, hashtable->values[i], hashtable->valuetypes[i]);
+        switch(hashtable->hashtable_type){
+            case HT_BLOBKEY:
+                vt = VT_STRING;
+                RnUnrefInDestroy(ctx, hashtable->keys[i], VT_STRING);
+                break;
+            case HT_INTKEY:
+                vt = VT_INT64;
+                RnUnrefInDestroy(ctx, hashtable->keys[i], VT_INT64);
+                break;
+            case HT_EQV:
+                RnUnrefInDestroy(ctx, hashtable->keys[i], 
+                                 hashtable->keytypes[i]);
+                break;
+            default:
+                abort();
+                break;
+        }
+    }
+
+#ifdef DEBUG_FILLFREED
+    memset(hashtable->values, 0xcc, sizeof(ValueContainer) *
+           hashtable->containercount);
+    memset(hashtable->valuetypes, 0xcc, sizeof(ValueType) *
+           hashtable->containercount);
+    memset(hashtable->keys, 0xcc, sizeof(ValueContainer) *
+           hashtable->containercount);
+    if(hashtable->keytypes){
+        memset(hashtable->keytypes, 0xcc, sizeof(ValueType) *
+               hashtable->containercount);
+    }
+#endif
+    free(hashtable->values);
+    free(hashtable->valuetypes);
+    free(hashtable->keys);
+    if(hashtable->keytypes){
+        free(hashtable->keytypes);
+    }
+#ifdef DEBUG_FILLFREED
+    memset(hashtable, 0xcc, sizeof(ObjHashtable));
+#endif
+    free(hashtable);
 }
 
 static void
@@ -632,6 +726,37 @@ RnRef(RnCtx* ctx, ValueContainer obj, ValueType type){
 }
 
 static void
+RnUnrefInDestroy(RnCtx* ctx, ValueContainer obj, ValueType type){
+    switch(type){
+        case VT_EMPTY:
+        case VT_ZONE0:
+        case VT_INT64:
+        case VT_DOUBLE:
+        case VT_CHAR:
+            /* Do nothing */
+            break;
+        case VT_RIB:
+        case VT_VECTOR:
+        case VT_SIMPLE_STRUCT:
+        case VT_HASHTABLE:
+            /* Container objects are already doomed to be freed */
+            break;
+        case VT_STRING:
+            RnUnrefString(ctx, obj.as_string);
+            break;
+        case VT_BYTEVECTOR:
+            RnUnrefBytevector(ctx, obj.as_bytevector);
+            break;
+        case VT_ROOT:
+            /* Do nothing? Should be freed with ctx */
+            break;
+        default:
+            abort();
+            break;
+    }
+}
+
+static void
 RnUnref(RnCtx* ctx, ValueContainer* obj, ValueType* type){
     switch(*type){
         case VT_EMPTY:
@@ -656,41 +781,6 @@ RnUnref(RnCtx* ctx, ValueContainer* obj, ValueType* type){
             break;
         case VT_BYTEVECTOR:
             RnUnrefBytevector(ctx, obj->as_bytevector);
-            break;
-        case VT_ROOT:
-            /* Do nothing? Should be freed with ctx */
-            break;
-        default:
-            abort();
-            break;
-    }
-    *type = VT_EMPTY;
-}
-
-static void
-RnForceFree(RnCtx* ctx, ValueContainer* obj, ValueType* type){
-    switch(*type){
-        case VT_EMPTY:
-        case VT_ZONE0:
-        case VT_INT64:
-        case VT_DOUBLE:
-        case VT_CHAR:
-        case VT_STRING:
-        case VT_BYTEVECTOR:
-            abort();
-            break;
-        case VT_RIB:
-            obj->as_rib->header.refcnt = 1;
-            RnUnrefRib(ctx, obj->as_rib);
-            break;
-        case VT_VECTOR:
-        case VT_SIMPLE_STRUCT:
-            obj->as_vector->header.refcnt = 1;
-            RnUnrefVector(ctx, obj->as_vector);
-            break;
-        case VT_HASHTABLE:
-            obj->as_hashtable->header.refcnt = 1;
-            RnUnrefHashtable(ctx, obj->as_hashtable);
             break;
         case VT_ROOT:
             /* Do nothing? Should be freed with ctx */
