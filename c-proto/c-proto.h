@@ -1,10 +1,14 @@
 
 struct ObjHeader_s {
-    struct ObjHeader_s* gc_prev;
     struct ObjHeader_s* gc_next;
+    struct ObjHeader_s* gc_prev;
     uintptr_t refcnt;
-    uintptr_t gc_refinfo;
+    uintptr_t gc_refinfo; /* refcnt * 8 + GC_TYPE + walked? */
 };
+
+const uintptr_t GC_TYPE_RIB = 1 * 2;
+const uintptr_t GC_TYPE_VECTOR = 2 * 2;
+const uintptr_t GC_TYPE_HASHTABLE = 3 * 2;
 
 typedef struct ObjHeader_s ObjHeader;
 
@@ -138,6 +142,7 @@ typedef struct Value_s Value;
 struct RnCtx_s { /* Ribbon Context */
     Value ctx_root;
     Value* current_frame;
+    ObjHeader gcroot;
 
     /* Globals (referred in ctx_root) */
     Value ht_global; /* String hashtable */

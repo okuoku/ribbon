@@ -16,9 +16,311 @@ typedef SSIZE_T ssize_t;
 #include <string.h>
 #include <math.h>
 
-/* Heap */
 
 #include "c-proto.h"
+
+/* GC */
+
+static void RnForceFree(RnCtx* ctx, ValueContainer* obj, ValueType* type);
+
+#define REF_INDELETE UINTPTR_MAX
+#define GCCYCLE 1000
+
+static int gccounter = 0;
+
+const uintptr_t ON_GARBAGE_LIST_MIN = UINTPTR_MAX - 7;
+const uintptr_t ITS_REACHABLE = 8;
+
+static ValueType
+gettype(ObjHeader* header){
+    uintptr_t x;
+    x = header->gc_refinfo;
+    x &= 6;
+    if(x == GC_TYPE_RIB){
+        return VT_RIB;
+    }else if(x == GC_TYPE_VECTOR){
+        return VT_VECTOR;
+    }else if(x == GC_TYPE_HASHTABLE){
+        return VT_HASHTABLE;
+    }else{
+        abort();
+    }
+}
+
+static void
+gcref_value(ValueContainer vc, ValueType t){
+    switch(t){
+        case VT_EMPTY:
+        case VT_ZONE0:
+        case VT_INT64:
+        case VT_DOUBLE:
+        case VT_CHAR:
+        case VT_STRING:
+        case VT_BYTEVECTOR:
+            break;
+        case VT_RIB:
+            vc.as_rib->header.gc_refinfo -= 8;
+            break;
+        case VT_VECTOR:
+        case VT_SIMPLE_STRUCT:
+            vc.as_vector->header.gc_refinfo -= 8;
+            break;
+        case VT_HASHTABLE:
+            vc.as_hashtable->header.gc_refinfo -= 8;
+            break;
+        default:
+            abort();
+            break;
+    }
+}
+
+static void
+gcwalk_gcref(ObjHeader* h){
+    size_t i;
+    ObjRib* rib;
+    ObjVector* vector;
+    ObjHashtable* hashtable;
+    ValueType t;
+    t = gettype(h);
+
+    switch(t){
+        case VT_RIB:
+            rib = (ObjRib*)h;
+            for(i=0;i!=3;i++){
+                gcref_value(rib->field[i], rib->type[i]);
+            }
+            break;
+        case VT_VECTOR:
+            vector = (ObjVector*)h;
+            for(i=0;i!=vector->length;i++){
+                gcref_value(vector->values[i], vector->types[i]);
+            }
+            break;
+        case VT_HASHTABLE:
+            hashtable = (ObjHashtable*)h;
+            /* NB: We can safely ignore table since it won't make
+             * any loop */
+            for(i=0;i!=hashtable->containercount;i++){
+                gcref_value(hashtable->values[i], hashtable->valuetypes[i]);
+            }
+            if(hashtable->keytypes){
+                for(i=0;i!=hashtable->containercount;i++){
+                    gcref_value(hashtable->keys[i], hashtable->keytypes[i]);
+                }
+            }
+            break;
+        default:
+            abort();
+            break;
+    }
+}
+
+static void
+rescue_value(ObjHeader* last, ValueContainer vc, ValueType t){
+    ObjHeader* h;
+    uintptr_t typetag;
+    switch(t){
+        case VT_EMPTY:
+        case VT_ZONE0:
+        case VT_INT64:
+        case VT_DOUBLE:
+        case VT_CHAR:
+        case VT_STRING:
+        case VT_BYTEVECTOR:
+            return;
+        case VT_RIB:
+            h = &vc.as_rib->header;
+            break;
+        case VT_VECTOR:
+        case VT_SIMPLE_STRUCT:
+            h = &vc.as_vector->header;
+            break;
+        case VT_HASHTABLE:
+            h = &vc.as_hashtable->header;
+            break;
+        default:
+            abort();
+            break;
+    }
+
+    typetag = h->gc_refinfo & 6;
+
+    if(h->gc_refinfo >= ON_GARBAGE_LIST_MIN){
+        if(h->gc_prev){
+            h->gc_prev->gc_next = h->gc_next;
+        }
+        if(h->gc_next){
+            h->gc_next->gc_prev = h->gc_prev;
+        }
+        if(last->gc_prev){
+            last->gc_prev->gc_next = h;
+        }
+        h->gc_prev = last->gc_prev;
+        h->gc_next = last;
+        last->gc_prev = h;
+    }
+
+    h->gc_refinfo = typetag + ITS_REACHABLE;
+}
+
+static void
+gcwalk_rescue(ObjHeader* last, ObjHeader* h){
+    size_t i;
+    ObjRib* rib;
+    ObjVector* vector;
+    ObjHashtable* hashtable;
+    ValueType t;
+    t = gettype(h);
+
+    switch(t){
+        case VT_RIB:
+            rib = (ObjRib*)h;
+            for(i=0;i!=3;i++){
+                rescue_value(last, rib->field[i], rib->type[i]);
+            }
+            break;
+        case VT_VECTOR:
+            vector = (ObjVector*)h;
+            for(i=0;i!=vector->length;i++){
+                rescue_value(last, vector->values[i], vector->types[i]);
+            }
+            break;
+        case VT_HASHTABLE:
+            hashtable = (ObjHashtable*)h;
+            for(i=0;i!=hashtable->containercount;i++){
+                rescue_value(last, hashtable->values[i], 
+                             hashtable->valuetypes[i]);
+            }
+            if(hashtable->keytypes){
+                for(i=0;i!=hashtable->containercount;i++){
+                    rescue_value(last, hashtable->keys[i], 
+                                 hashtable->keytypes[i]);
+                }
+            }
+            break;
+        default:
+            abort();
+            break;
+    }
+}
+
+static void
+RnGc(RnCtx* ctx){
+    ObjHeader* cur;
+    ObjHeader* curnext;
+    ObjHeader lastlive;
+    ObjHeader garbages;
+    ValueContainer vc;
+    ValueType t;
+    uintptr_t gcrefcnt;
+    uintptr_t typetag;
+    garbages.gc_prev = garbages.gc_next = 0;
+    lastlive.gc_prev = lastlive.gc_next = 0;
+
+    /* First, Initialize gc_refinfo field + setup lastlive */
+    cur = ctx->gcroot.gc_next;
+    while(cur){
+        cur->gc_refinfo &= 6;
+        if(cur->refcnt == 0){
+            abort();
+        }
+        if(cur->refcnt == REF_INDELETE){
+            abort();
+        }
+        cur->gc_refinfo += cur->refcnt * 8;
+        lastlive.gc_prev = cur;
+        cur = cur->gc_next;
+    }
+
+    /* Link lastlive */
+    if(lastlive.gc_prev){
+        if(lastlive.gc_prev->gc_next != 0){
+            abort();
+        }
+        lastlive.gc_prev->gc_next = &lastlive;
+    }
+
+    /* Adjust gcref */
+    cur = ctx->gcroot.gc_next;
+    while(cur && cur != &lastlive){
+        gcwalk_gcref(cur);
+        cur = cur->gc_next;
+    }
+
+    /* Detect unreachable-candidates */
+    cur = ctx->gcroot.gc_next;
+    while(cur && cur != &lastlive){
+        gcrefcnt = cur->gc_refinfo / 8;
+        typetag = cur->gc_refinfo & 6;
+        curnext = cur->gc_next;
+        if(cur->gc_refinfo >= ON_GARBAGE_LIST_MIN){
+            abort();
+        }
+        if(gcrefcnt != 0){
+            /* It's reachable object, walk and move its contents
+             * to live list */
+            gcwalk_rescue(&lastlive, cur);
+            curnext = cur->gc_next;
+        }else{
+            /* Maybe a garbage, move to garbage list for now */
+            if(cur->gc_prev){
+                cur->gc_prev->gc_next = cur->gc_next;
+            }
+            if(cur->gc_next){
+                cur->gc_next->gc_prev = cur->gc_prev;
+            }
+            if(garbages.gc_next){
+                garbages.gc_next->gc_prev = cur;
+            }
+            cur->gc_next = garbages.gc_next;
+            cur->gc_prev = &garbages;
+            garbages.gc_next = cur;
+            cur->gc_refinfo = ON_GARBAGE_LIST_MIN + typetag;
+        }
+        cur = curnext;
+    }
+
+    /* Unlink lastlive */
+    if(lastlive.gc_prev){
+        if(lastlive.gc_prev->gc_next != &lastlive){
+            abort();
+        }
+        lastlive.gc_prev->gc_next = 0;
+    }
+
+    /* Do GC */
+    while(garbages.gc_next){
+        cur = garbages.gc_next;
+        t = gettype(cur);
+        switch(t){
+            case VT_RIB:
+                vc.as_rib = (ObjRib*)cur;
+                break;
+            case VT_VECTOR:
+                vc.as_vector = (ObjVector*)cur;
+                break;
+            case VT_HASHTABLE:
+                vc.as_hashtable = (ObjHashtable*)cur;
+                break;
+            default:
+                abort();
+                break;
+        }
+        RnForceFree(ctx, &vc, &t);
+    }
+}
+
+static void 
+RnGcTick(RnCtx* ctx){
+    gccounter++;
+    if(gccounter > GCCYCLE){
+        gccounter = 0;
+        RnGc(ctx);
+    }
+}
+
+/* Heap */
+
 
 static void RnUnref(RnCtx* ctx, ValueContainer* obj, ValueType* type);
 
@@ -80,7 +382,6 @@ static void RnObjHeaderUnlink(RnCtx* ctx, ObjHeader* header);
 
 #define DEBUG_FILLFREED
 
-#define REF_INDELETE UINTPTR_MAX
 
 static void
 RnRefRib(RnCtx* ctx, ObjRib* rib){
@@ -359,6 +660,44 @@ RnUnref(RnCtx* ctx, ValueContainer* obj, ValueType* type){
         case VT_ROOT:
             /* Do nothing? Should be freed with ctx */
             break;
+        default:
+            abort();
+            break;
+    }
+    *type = VT_EMPTY;
+}
+
+static void
+RnForceFree(RnCtx* ctx, ValueContainer* obj, ValueType* type){
+    switch(*type){
+        case VT_EMPTY:
+        case VT_ZONE0:
+        case VT_INT64:
+        case VT_DOUBLE:
+        case VT_CHAR:
+        case VT_STRING:
+        case VT_BYTEVECTOR:
+            abort();
+            break;
+        case VT_RIB:
+            obj->as_rib->header.refcnt = 1;
+            RnUnrefRib(ctx, obj->as_rib);
+            break;
+        case VT_VECTOR:
+        case VT_SIMPLE_STRUCT:
+            obj->as_vector->header.refcnt = 1;
+            RnUnrefVector(ctx, obj->as_vector);
+            break;
+        case VT_HASHTABLE:
+            obj->as_hashtable->header.refcnt = 1;
+            RnUnrefHashtable(ctx, obj->as_hashtable);
+            break;
+        case VT_ROOT:
+            /* Do nothing? Should be freed with ctx */
+            break;
+        default:
+            abort();
+            break;
     }
     *type = VT_EMPTY;
 }
@@ -378,16 +717,40 @@ RnValueRef(RnCtx* ctx, Value* target, ValueContainer obj, ValueType type){
 }
 
 static void
-RnObjHeaderInit(RnCtx* ctx, ObjHeader* header){
-    (void)ctx;
-    (void)header;
+RnObjHeaderInit(RnCtx* ctx, ObjHeader* header, ValueType t){
     header->refcnt = 0;
+    switch(t){
+        case VT_RIB:
+            header->gc_refinfo = GC_TYPE_RIB;
+            break;
+        case VT_VECTOR:
+        case VT_SIMPLE_STRUCT:
+            header->gc_refinfo = GC_TYPE_VECTOR;
+            break;
+        case VT_HASHTABLE:
+            header->gc_refinfo = GC_TYPE_HASHTABLE;
+            break;
+        default:
+            abort();
+            break;
+    }
+    header->gc_prev = &ctx->gcroot;
+    if(ctx->gcroot.gc_next){
+        ctx->gcroot.gc_next->gc_prev = header;
+    }
+    header->gc_next = ctx->gcroot.gc_next;
+    ctx->gcroot.gc_next = header;
 }
 
 static void
 RnObjHeaderUnlink(RnCtx* ctx, ObjHeader* header){
     (void)ctx;
-    (void)header;
+    if(header->gc_prev){
+        header->gc_prev->gc_next = header->gc_next;
+    }
+    if(header->gc_next){
+        header->gc_next->gc_prev = header->gc_prev;
+    }
 }
 
 void
@@ -423,7 +786,7 @@ RnRib(RnCtx* ctx, Value* out, Value* field0, Value* field1, Value* field2){
     if(!r){
         abort();
     }
-    RnObjHeaderInit(ctx, (ObjHeader*)r);
+    RnObjHeaderInit(ctx, (ObjHeader*)r, VT_RIB);
     r->type[0] = r->type[1] = r->type[2] = VT_EMPTY;
     vc.as_rib = r;
     RnValueRef(ctx, &v, vc, VT_RIB);
@@ -488,7 +851,7 @@ RnVector(RnCtx* ctx, Value* out, size_t len){
     if(! r->types){
         abort();
     }
-    RnObjHeaderInit(ctx, (ObjHeader*)r);
+    RnObjHeaderInit(ctx, (ObjHeader*)r, VT_VECTOR);
     for(i = 0; i!=len; i++){
         r->types[i] = VT_EMPTY;
     }
@@ -969,7 +1332,7 @@ RnHashtable(RnCtx* ctx, Value* out, HashtableClass htc){
     if(! ht){
         abort();
     }
-    RnObjHeaderInit(ctx, (ObjHeader*)ht);
+    RnObjHeaderInit(ctx, (ObjHeader*)ht, VT_HASHTABLE);
 
     ht->tablesize = 57;
     ht->table = (ValueContainer*)malloc(sizeof(ValueContainer) * ht->tablesize);
@@ -1022,6 +1385,7 @@ RnHashtable(RnCtx* ctx, Value* out, HashtableClass htc){
 void
 RnCtxInit(RnCtx* newctx){
     newctx->current_frame = 0;
+    newctx->gcroot.gc_prev = newctx->gcroot.gc_next = 0;
     RnEnter(newctx, &newctx->ctx_root);
     RnValueLink(newctx, &newctx->ht_global);
     RnValueLink(newctx, &newctx->ht_libinfo);
@@ -1774,6 +2138,7 @@ RnVmRun(RnCtx* ctx, Value* out, Value* code){
 
     while(1){
         cont = vmstep(ctx, &state);
+        RnGcTick(ctx);
         if(! cont){
             break;
         }
@@ -1979,9 +2344,13 @@ main(int ac, char** av){
     fclose(bin);
 
     RnCtxInit(&ctx);
+    RnGc(&ctx);
     load_bootstrap(&ctx, bootstrap);
+    RnGc(&ctx);
     enter_externals(&ctx);
+    RnGc(&ctx);
     parse_bootstrap(&ctx);
+    RnGc(&ctx);
     run_bootstrap(&ctx);
 
     return 0;
