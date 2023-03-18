@@ -1,3 +1,11 @@
+
+#if defined(_MSC_VER)
+#include <BaseTsd.h>
+// FIXME: Drop use of ssize_t
+typedef SSIZE_T ssize_t;
+#endif
+
+
 //#define TRACE
 /* Ribbon Scheme proto */
 #include <stdint.h>
