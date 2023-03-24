@@ -1,3 +1,6 @@
+#define GCCYCLE 10000000
+//#define TRACE
+#define DEBUG_FILLFREED
 
 #if defined(_MSC_VER)
 #include <BaseTsd.h>
@@ -5,8 +8,6 @@
 typedef SSIZE_T ssize_t;
 #endif
 
-
-//#define TRACE
 /* Ribbon Scheme proto */
 #include <stdint.h>
 #include <stdlib.h>
@@ -15,7 +16,6 @@ typedef SSIZE_T ssize_t;
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
-
 
 #include "c-proto.h"
 
@@ -26,7 +26,6 @@ static void RnDestroyVector(RnCtx* ctx, ObjVector* vector);
 static void RnDestroyHashtable(RnCtx* ctx, ObjHashtable* hashtable);
 
 #define REF_INDELETE UINTPTR_MAX
-#define GCCYCLE 100000
 
 static int gccounter = 0;
 
@@ -382,8 +381,6 @@ RnLeave(RnCtx* ctx, Value* current_frame){
 }
 
 static void RnObjHeaderUnlink(RnCtx* ctx, ObjHeader* header);
-
-#define DEBUG_FILLFREED
 
 
 static void
