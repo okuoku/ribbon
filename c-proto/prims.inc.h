@@ -1871,6 +1871,10 @@ ExEq(RnCtx* ctx, int argc, Value* stack){
         }
 
     }
+    while(argc){
+        RnRibRef(ctx, stack, stack, 1);
+        argc--;
+    }
     to_bool(ctx, &out, r);
     RnCons(ctx, stack, &out, stack);
     RnValueUnlink(ctx, &out);
@@ -1945,6 +1949,10 @@ ExLt(RnCtx* ctx, int argc, Value* stack){
             abort();
         }
 
+    }
+    while(argc){
+        RnRibRef(ctx, stack, stack, 1);
+        argc--;
     }
     to_bool(ctx, &out, r);
     RnCons(ctx, stack, &out, stack);
@@ -2021,6 +2029,10 @@ ExLtEq(RnCtx* ctx, int argc, Value* stack){
         }
 
     }
+    while(argc){
+        RnRibRef(ctx, stack, stack, 1);
+        argc--;
+    }
     to_bool(ctx, &out, r);
     RnCons(ctx, stack, &out, stack);
     RnValueUnlink(ctx, &out);
@@ -2096,6 +2108,10 @@ ExGt(RnCtx* ctx, int argc, Value* stack){
         }
 
     }
+    while(argc){
+        RnRibRef(ctx, stack, stack, 1);
+        argc--;
+    }
     to_bool(ctx, &out, r);
     RnCons(ctx, stack, &out, stack);
     RnValueUnlink(ctx, &out);
@@ -2170,6 +2186,10 @@ ExGtEq(RnCtx* ctx, int argc, Value* stack){
             abort();
         }
 
+    }
+    while(argc){
+        RnRibRef(ctx, stack, stack, 1);
+        argc--;
     }
     to_bool(ctx, &out, r);
     RnCons(ctx, stack, &out, stack);
