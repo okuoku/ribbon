@@ -64,6 +64,12 @@ function(maxwarn tgt)
     endif()
 endfunction()
 
+function(brand tgt)
+    if(UNIX)
+        target_link_libraries(${tgt} m)
+    endif()
+endfunction()
+
 add_definitions(
     -DYUNIROOT=\"${WITH_YUNI}\"
     -DRUNTIMEROOT=\"${WITH_RUNTIME}\"
@@ -77,6 +83,8 @@ add_executable(protoxx
 
 maxwarn(proto)
 maxwarn(protoxx)
+brand(proto)
+brand(protoxx)
 
 # Tests
 
