@@ -68,6 +68,12 @@ function(brand tgt)
     if(UNIX)
         target_link_libraries(${tgt} m)
     endif()
+    if(COVERAGE)
+        if(NOT MSVC)
+            target_compile_options(${tgt} PRIVATE --coverage)
+            target_link_options(${tgt} PRIVATE --coverage)
+        endif()
+    endif()
 endfunction()
 
 add_definitions(
