@@ -50,7 +50,8 @@ add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/dump.bin
     ${CMAKE_CURRENT_LIST_DIR}/boot/start.sps
     )
 
-add_custom_target(bootstrapblob DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/dump.bin)
+add_custom_target(bootstrapblob ALL
+    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/dump.bin )
 
 # Interpreter(C, C++)
 
