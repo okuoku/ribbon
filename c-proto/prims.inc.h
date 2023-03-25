@@ -419,8 +419,7 @@ ExVmfetch(RnCtx* ctx, int argc, Value* stack){
 static void
 ExCommandLine(RnCtx* ctx, Value* out, Value* bogus){
     (void) bogus;
-    // FIXME: Implement this
-    RnVector(ctx, out, 0);
+    RnValueRef(ctx, out, ctx->args.value, ctx->args.type);
 }
 
 static void

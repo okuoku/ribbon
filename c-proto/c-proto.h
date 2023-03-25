@@ -150,6 +150,7 @@ struct RnCtx_s { /* Ribbon Context */
     Value ht_libcode; /* libsym => code */
     Value ht_macro; /* sym => code */
     Value bootstrap; /* Scheme object */
+    Value args; /* command-line arguments (vector) */
 };
 
 

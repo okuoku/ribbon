@@ -1479,6 +1479,7 @@ RnCtxInit(RnCtx* newctx){
     RnValueLink(newctx, &newctx->ht_libcode);
     RnValueLink(newctx, &newctx->ht_macro);
     RnValueLink(newctx, &newctx->bootstrap);
+    RnValueLink(newctx, &newctx->args);
 
     RnHashtable(newctx, &newctx->ht_global, HTC_STRING_HASHTABLE);
 }
@@ -2405,18 +2406,38 @@ enter_externals(RnCtx* ctx){
 }
 
 /* main */
+static const char* bootfile = "c:/cygwin64/home/oku/repos/yuniribbit-proto/dump.bin";
+
 int
 main(int ac, char** av){
     FILE* bin;
+    int i,argstart;
     uint8_t* bootstrap;
     long binsize;
+    Value str;
 
     RnCtx ctx;
+    RnCtxInit(&ctx);
 
-    (void)ac;
-    (void)av;
+    RnValueLink(&ctx, &str);
+    /* Parse arguments */
+    if(ac > 0){
+        argstart = 1; // TEMP
+        RnVector(&ctx, &ctx.args, ac - argstart);
+        for(i=argstart;i!=ac;i++){
+            /* pack rest arguments into a vector */
+            // FIXME: Use ARG_MAX on posix
+            RnString(&ctx, &str, av[i], strnlen(av[i], 4096));
+            RnVectorSet(&ctx, &ctx.args, &str, i - argstart);
+        }
+    }else{
+        /* AC should never be 0 on POSIX */
+        abort();
+    }
+    RnValueUnlink(&ctx, &str);
 
-    bin = fopen("c:/cygwin64/home/oku/repos/yuniribbit-proto/dump.bin", "rb");
+    /* Load bootfile */
+    bin = fopen(bootfile, "rb");
     if(! bin){
         abort();
     }
@@ -2430,15 +2451,13 @@ main(int ac, char** av){
     fread(bootstrap, binsize, 1, bin);
     fclose(bin);
 
-    RnCtxInit(&ctx);
-    RnGc(&ctx);
+    /* Run bootstrap */
     load_bootstrap(&ctx, bootstrap);
-    RnGc(&ctx);
     enter_externals(&ctx);
-    RnGc(&ctx);
     parse_bootstrap(&ctx);
-    RnGc(&ctx);
     run_bootstrap(&ctx);
+
+    // FIXME: Deinit context here
 
     return 0;
 }
