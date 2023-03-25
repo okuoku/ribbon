@@ -2406,7 +2406,7 @@ enter_externals(RnCtx* ctx){
 }
 
 /* main */
-static const char* bootfile = "c:/cygwin64/home/oku/repos/yuniribbit-proto/dump.bin";
+static const char* bootfile = BUILDROOT "/dump.bin";
 
 int
 main(int ac, char** av){
@@ -2423,12 +2423,21 @@ main(int ac, char** av){
     /* Parse arguments */
     if(ac > 0){
         argstart = 1; // TEMP
-        RnVector(&ctx, &ctx.args, ac - argstart);
+        RnVector(&ctx, &ctx.args, ac - argstart + 4);
+        /* default arguments */
+        RnString(&ctx, &str, "-yuniroot", sizeof("-yuniroot") - 1);
+        RnVectorSet(&ctx, &ctx.args, &str, 0);
+        RnString(&ctx, &str, YUNIROOT, sizeof(YUNIROOT) - 1);
+        RnVectorSet(&ctx, &ctx.args, &str, 1);
+        RnString(&ctx, &str, "-runtimeroot", sizeof("-runtimeroot") - 1);
+        RnVectorSet(&ctx, &ctx.args, &str, 2);
+        RnString(&ctx, &str, RUNTIMEROOT, sizeof(RUNTIMEROOT) - 1);
+        RnVectorSet(&ctx, &ctx.args, &str, 3);
         for(i=argstart;i!=ac;i++){
             /* pack rest arguments into a vector */
             // FIXME: Use ARG_MAX on posix
             RnString(&ctx, &str, av[i], strnlen(av[i], 4096));
-            RnVectorSet(&ctx, &ctx.args, &str, i - argstart);
+            RnVectorSet(&ctx, &ctx.args, &str, i - argstart + 4);
         }
     }else{
         /* AC should never be 0 on POSIX */

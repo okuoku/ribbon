@@ -46,7 +46,9 @@ add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/dump.bin
     COMPILE
     ${CMAKE_CURRENT_LIST_DIR}/boot/start.sps
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-    DEPENDS ${yunifiles} ${runtimefiles})
+    DEPENDS ${yunifiles} ${runtimefiles}
+    ${CMAKE_CURRENT_LIST_DIR}/boot/start.sps
+    )
 
 add_custom_target(bootstrapblob DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/dump.bin)
 
@@ -60,6 +62,11 @@ function(maxwarn tgt)
         target_compile_options(${tgt} PRIVATE -Wall -Wextra -Wpedantic -Werror)
     endif()
 endfunction()
+
+add_definitions(
+    -DYUNIROOT=\"${WITH_YUNI}\"
+    -DRUNTIMEROOT=\"${WITH_RUNTIME}\"
+    -DBUILDROOT=\"${CMAKE_CURRENT_BINARY_DIR}\")
 
 add_executable(proto
     c-proto/c-proto.c)
