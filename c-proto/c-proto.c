@@ -2046,6 +2046,10 @@ call_vm_exit(RnCtx* ctx, struct vmstate_s* state){
         abort();
     }
     state->exit_mode = state->stack.value.as_rib->field[0].as_int64;
+    if(state->exit_mode == 1){
+        // FIXME: Raise it instead
+        exit((int)state->result.value.as_int64);
+    }
 }
 
 static void
