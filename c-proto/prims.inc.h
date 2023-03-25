@@ -453,7 +453,7 @@ ExLookupCachedMacro(RnCtx* ctx, Value* out, Value* sym){
 static void
 ExMacroRuntimeMode(RnCtx* ctx, Value* out, Value* bogus){
     (void) bogus;
-    RnInt64(ctx, out, 0);
+    RnInt64(ctx, out, 1);
 }
 
 static void
