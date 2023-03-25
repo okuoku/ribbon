@@ -66,17 +66,27 @@ set(negativetestsrcs
     ${tests}/err/fail8.sps
     )
 
+set(excludes 
+    # FIXME: Currently, C/CXX would abort() for any error. Skip these tests.
+    qq0 app sibr0010string sibr0010vector sibr0011 sibr0012gen
+    sibr0013 sibr0014
+    fail1 fail3 fail4 fail5 fail6 fail8)
+
+foreach(e ${excludes})
+    set(exclude_C-${e} ON)
+    set(exclude_CXX-${e} ON)
+endforeach()
+
 function(add_c_test nam fil turnfail)
-    add_test(NAME C-${nam}
-        COMMAND proto
-        ${fil})
-
-    add_test(NAME CXX-${nam}
-        COMMAND protoxx
-        ${fil})
-
-    set_tests_properties(C-${nam} CXX-${nam}
-        PROPERTIES WILL_FAIL ${turnfail})
+    foreach(lang C CXX)
+        if(NOT exclude_${lang}-${nam})
+            add_test(NAME ${lang}-${nam}
+                COMMAND proto
+                ${fil})
+            set_tests_properties(${lang}-${nam}
+                PROPERTIES WILL_FAIL ${turnfail})
+        endif()
+    endforeach()
 endfunction()
 
 function(add_scm_test nam fil turnfail)
@@ -105,7 +115,7 @@ endfunction()
 
 function(add_any_test nam fil turnfail)
     add_scm_test(${nam} ${fil} ${turnfail})
-    #add_c_test(${nam} ${fil} ${turnfail})
+    add_c_test(${nam} ${fil} ${turnfail})
 endfunction()
 
 foreach(f ${testsrcs})
