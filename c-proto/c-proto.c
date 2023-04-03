@@ -2241,6 +2241,86 @@ RnVmRun(RnCtx* ctx, Value* out, Value* code){
     RnLeave(ctx, &frame);
 }
 
+static size_t
+read_vec_offset(RnCtx* ctx, Value* vec, size_t offs){
+    Value tmp;
+    size_t r;
+    RnValueLink(ctx, &tmp);
+    RnVectorRef(ctx, &tmp, vec, offs);
+    if(tmp.type != VT_INT64){
+        abort();
+    }
+    r = (size_t)tmp.value.as_int64;
+    RnValueUnlink(ctx, &tmp);
+    return r;
+}
+
+static void
+parse_ribcode(RnCtx* ctx, Value* code, Value* vec){
+    Value frame;
+    Value tbl;
+    size_t out;
+    size_t offs_rib;
+    size_t offs_rosym;
+    size_t ribcount;
+    Value ribs;
+    Value r;
+    Value v;
+    size_t vidx;
+    Value zero;
+    size_t idx;
+    size_t i;
+
+    RnEnter(ctx, &frame);
+    RnValueLink(ctx, &tbl);
+    RnValueLink(ctx, &ribs);
+    RnValueLink(ctx, &r);
+    RnValueLink(ctx, &v);
+    RnValueLink(ctx, &zero);
+
+    /* Init */
+    RnVectorRef(ctx, &tbl, vec, 4);
+    out = read_vec_offset(ctx, vec, 0);
+    offs_rib = read_vec_offset(ctx, vec, 1);
+    offs_rosym = read_vec_offset(ctx, vec, 2);
+    ribcount = offs_rosym - offs_rib;
+    RnVector(ctx, &ribs, ribcount);
+    RnInt64(ctx, &zero, 0);
+
+    /* Generate output ribs */
+    idx = 0;
+    while(idx != ribcount){
+        RnRib(ctx, &r, &zero, &zero, &zero);
+        RnVectorSet(ctx, &ribs, &r, idx);
+        idx++;
+    }
+
+    /* Fill rib content */
+    idx = offs_rib;
+    while(idx != offs_rosym){
+        RnVectorRef(ctx, &r, &ribs, (idx - offs_rib) / 3);
+        for(i = 0; i != 3; i++){
+            vidx = read_vec_offset(ctx, &tbl, idx + i);
+            if((offs_rib <= vidx) && (offs_rosym > vidx)){
+                RnVectorRef(ctx, &v, &ribs, (vidx - offs_rib) / 3);
+            }else{
+                RnVectorRef(ctx, &v, &tbl, vidx);
+            }
+            if(v.type == VT_EMPTY){
+                abort();
+            }
+            RnRibSet(ctx, &r, &v, i);
+        }
+        idx += 3;
+    }
+    /* Don't access `vec` to support code == vec case */
+    RnVectorRef(ctx, code, &ribs, (out - offs_rib) / 3);
+    if(code->type != VT_RIB){
+        abort();
+    }
+    RnLeave(ctx, &frame);
+}
+
 
 static void
 parse_bootstrap(RnCtx* ctx){
@@ -2287,9 +2367,12 @@ parse_bootstrap(RnCtx* ctx){
         RnHashtableSet(ctx, &ctx->ht_libinfo, &libsym, &tmp);
         /* libcode */
         RnVectorRef(ctx, &tmp, &lib, 5);
+        parse_ribcode(ctx, &tmp, &tmp);
+        RnVectorSet(ctx, &lib, &tmp, 5); /* Write back unpacked ribcode */
         RnHashtableSet(ctx, &ctx->ht_libcode, &libsym, &tmp);
         /* mac* */
         RnVectorRef(ctx, &tmp, &lib, 7);
+        parse_ribcode(ctx, &tmp, &tmp);
         RnVmRun(ctx, &tmp2, &tmp);
         RnVectorRef(ctx, &tmp, &lib, 6);
         while(1){
