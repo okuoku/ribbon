@@ -1006,7 +1006,7 @@ vector_to_string(RnCtx* ctx, Value* out, ObjVector* vec,
         utf8_encode(p, pend, c);
         p += utf8_ebytes(c);
     }
-    str->str = (const char*)p;
+    str->str = (const char*)s;
     str->len = siz;
     str->refcnt = 0;
     v.as_string = str;
