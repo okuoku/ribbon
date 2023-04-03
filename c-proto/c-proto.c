@@ -1693,22 +1693,10 @@ load_bootstrap(RnCtx* ctx, const uint8_t* bin){
     cur = vectoroff;
     for(i = 0; i != vectors; i++){
         val = get_leb128(&p);
-        if(val == 3){
-            /* Create Rib first */
-            /* FIXME: Decode to vector later */
-            RnRib(ctx, &v[cur+i], &zero, &zero, &zero);
+        RnVector(ctx, &v[cur+i], val);
+        for(j = 0; j != val; j++){
             RnInt64(ctx, &tmp, get_leb128(&p));
-            RnRibSet(ctx, &v[cur+i], &tmp, 0);
-            RnInt64(ctx, &tmp, get_leb128(&p));
-            RnRibSet(ctx, &v[cur+i], &tmp, 1);
-            RnInt64(ctx, &tmp, get_leb128(&p));
-            RnRibSet(ctx, &v[cur+i], &tmp, 2);
-        }else{
-            RnVector(ctx, &v[cur+i], val);
-            for(j = 0; j != val; j++){
-                RnInt64(ctx, &tmp, get_leb128(&p));
-                RnVectorSet(ctx, &v[cur+i], &tmp, j);
-            }
+            RnVectorSet(ctx, &v[cur+i], &tmp, j);
         }
     }
 
