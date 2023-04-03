@@ -21,16 +21,20 @@ set(runtime_runtimepath
     # Followings are not registered as libpath but we need these for now...
     emul ribbon yuniribbit)
 
+set(yunifiles)
 foreach(e ${yuni_runtimepath})
-    file(GLOB_RECURSE yunifiles LIST_DIRECTORIES false 
+    file(GLOB_RECURSE globfiles LIST_DIRECTORIES false 
         CONFIGURE_DEPENDS
         ${WITH_YUNI}/${e}/*.sls)
+    list(APPEND yunifiles ${globfiles})
 endforeach()
 
+set(runtimefiles)
 foreach(e ${runtime_runtimepath})
-    file(GLOB_RECURSE runtimefiles LIST_DIRECTORIES false 
+    file(GLOB_RECURSE globfiles LIST_DIRECTORIES false 
         CONFIGURE_DEPENDS
         ${WITH_RUNTIME}/${e}/*.sls)
+    list(APPEND runtimefiles ${globfiles})
 endforeach()
 
 # Runtime BLOB
@@ -47,6 +51,8 @@ add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/dump.bin
     ${CMAKE_CURRENT_LIST_DIR}/boot/start.sps
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     DEPENDS ${yunifiles} ${runtimefiles}
+    ${WITH_RUNTIME}/_run.cmake
+    ${WITH_RUNTIME}/_immvm.sps
     ${CMAKE_CURRENT_LIST_DIR}/boot/start.sps
     )
 
