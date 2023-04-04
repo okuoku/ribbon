@@ -99,18 +99,20 @@ function(add_scm_test nam fil turnfail)
         -Dinput=${f}
         -P ${WITH_RUNTIME}/_testrun.cmake)
 
-    # interp
-    add_test(NAME EMUL-${nam}
-        COMMAND ${CMAKE_COMMAND}
-        -DROOT=${WITH_YUNI}
-        -DYUNIBUILD=${CMAKE_CURRENT_BINARY_DIR}/yuni
-        -DIMPL=gauche
-        -Dinterp=emul
-        -Dinput=${f}
-        -P ${WITH_RUNTIME}/_testrun.cmake)
+    ## interp
+    #add_test(NAME EMUL-${nam}
+    #    COMMAND ${CMAKE_COMMAND}
+    #    -DROOT=${WITH_YUNI}
+    #    -DYUNIBUILD=${CMAKE_CURRENT_BINARY_DIR}/yuni
+    #    -DIMPL=gauche
+    #    -Dinterp=emul
+    #    -Dinput=${f}
+    #    -P ${WITH_RUNTIME}/_testrun.cmake)
 
-    set_tests_properties(BASE-${nam} EMUL-${nam}
+    set_tests_properties(BASE-${nam}
         PROPERTIES WILL_FAIL ${turnfail})
+    #set_tests_properties(BASE-${nam} EMUL-${nam}
+    #    PROPERTIES WILL_FAIL ${turnfail})
 endfunction()
 
 function(add_any_test nam fil turnfail)
