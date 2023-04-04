@@ -1283,15 +1283,42 @@ string_to_number(RnCtx* ctx, Value* out, Value* s, int radix){
     int is_inexact;
     double d;
     int64_t reg;
+    const char* t;
     if(s->type != VT_STRING){
         abort();
     }
     str = s->value.as_string;
+    t = str->str;
+    /* Check for explicit radix */
+    if(str->len > 2){
+        if(t[0] == '#'){
+            switch(t[1]){
+                case 'x':
+                    radix = 16;
+                    t = &t[2];
+                    break;
+                case 'b':
+                    radix = 2;
+                    t = &t[2];
+                    break;
+                case 'd':
+                    radix = 10;
+                    t = &t[2];
+                    break;
+                case 'o':
+                    radix = 8;
+                    t = &t[2];
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
     switch(radix){
         case 2:
         case 8:
         case 16:
-            reg = strtoimax(str->str, NULL, radix);
+            reg = strtoimax(t, NULL, radix);
             RnInt64(ctx, out, reg);
             break;
         case 10:
