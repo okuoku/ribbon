@@ -17,6 +17,12 @@
     (let ((a (car *command-line*))
           (d (cdr *command-line*)))
       (cond
+        ((string=? "-libpath" a)
+         (unless (pair? d)
+           (fail a))
+         (set! libpath (append (list (car d)) libpath))
+         (set! *command-line* (cdr d))
+         (consume-arguments!))
         ((string=? "-yuniroot" a)
          (unless (pair? d)
            (fail a))
