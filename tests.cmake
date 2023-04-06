@@ -116,7 +116,9 @@ function(add_scm_test nam fil turnfail)
 endfunction()
 
 function(add_any_test nam fil turnfail)
-    add_scm_test(${nam} ${fil} ${turnfail})
+    if(NOT WITH_PREBOOT)
+        add_scm_test(${nam} ${fil} ${turnfail})
+    endif()
     add_c_test(${nam} ${fil} ${turnfail})
 endfunction()
 

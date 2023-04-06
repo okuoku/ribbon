@@ -1,7 +1,9 @@
 cmake_minimum_required(VERSION 3.12) # CONFIGURE_DEPENDS
 project(ribbon C CXX)
 
-if(NOT YUNI_WITH_YUNIBASE)
+if(WITH_PREBOOT)
+    # Do nothing
+elseif(NOT YUNI_WITH_YUNIBASE)
     message(FATAL_ERROR "Ribbon requires yunibase to generate bootstrap.")
 endif()
 
@@ -38,23 +40,33 @@ foreach(e ${runtime_runtimepath})
 endforeach()
 
 # Runtime BLOB
-add_subdirectory(${WITH_YUNI} yuni)
+set(bootstrapfile ${CMAKE_CURRENT_BINARY_DIR}/dump.bin)
+if(WITH_PREBOOT)
+    add_custom_command(OUTPUT ${bootstrapfile}
+        COMMAND
+        ${CMAKE_COMMAND} -E copy
+        ${WITH_PREBOOT} ${bootstrapfile}
+        DEPENDS ${WITH_PREBOOT})
 
-add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/dump.bin
-    COMMAND
-    ${CMAKE_COMMAND} 
-    -DROOT=${WITH_YUNI} 
-    -DYUNIBUILD=${CMAKE_CURRENT_BINARY_DIR}/yuni 
-    -DIMPL=gauche 
-    -P ${WITH_RUNTIME}/_run.cmake 
-    COMPILE
-    ${CMAKE_CURRENT_LIST_DIR}/boot/start.sps
-    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-    DEPENDS ${yunifiles} ${runtimefiles}
-    ${WITH_RUNTIME}/_run.cmake
-    ${WITH_RUNTIME}/_immvm.sps
-    ${CMAKE_CURRENT_LIST_DIR}/boot/start.sps
-    )
+else()
+    add_subdirectory(${WITH_YUNI} yuni)
+
+    add_custom_command(OUTPUT ${bootstrapfile}
+        COMMAND
+        ${CMAKE_COMMAND} 
+        -DROOT=${WITH_YUNI} 
+        -DYUNIBUILD=${CMAKE_CURRENT_BINARY_DIR}/yuni 
+        -DIMPL=gauche 
+        -P ${WITH_RUNTIME}/_run.cmake 
+        COMPILE
+        ${CMAKE_CURRENT_LIST_DIR}/boot/start.sps
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+        DEPENDS ${yunifiles} ${runtimefiles}
+        ${WITH_RUNTIME}/_run.cmake
+        ${WITH_RUNTIME}/_immvm.sps
+        ${CMAKE_CURRENT_LIST_DIR}/boot/start.sps
+        )
+endif()
 
 add_custom_target(bootstrapblob ALL
     DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/dump.bin )
