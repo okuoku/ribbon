@@ -742,7 +742,7 @@ ExIntegerToChar(RnCtx* ctx, Value* out, Value* i){
     if(i->value.as_int64 < 0){
         abort();
     }
-    RnChar(ctx, out, i->value.as_int64);
+    RnChar(ctx, out, (int)i->value.as_int64);
 }
 
 static void
@@ -928,7 +928,7 @@ utf8_encode(char* start, const char* stop, int c){
     }
     switch(r){
         case 1:
-            *(unsigned char*)start = c;
+            *(unsigned char*)start = (unsigned char)c;
             return;
         case 2:
             start += 1;
@@ -1257,7 +1257,7 @@ ExNumberToString_2_1(RnCtx* ctx, Value* out, Value* z, Value* radix){
     if(radix->type != VT_INT64){
         abort();
     }
-    number_to_string(ctx, out, z, radix->value.as_int64);
+    number_to_string(ctx, out, z, (int)radix->value.as_int64);
 }
 
 static void
@@ -1352,7 +1352,7 @@ ExStringToNumber_2_1(RnCtx* ctx, Value* out, Value* s, Value* radix){
     if(radix->type != VT_INT64){
         abort();
     }
-    string_to_number(ctx, out, s, radix->value.as_int64);
+    string_to_number(ctx, out, s, (int)radix->value.as_int64);
 }
 
 static void
@@ -1694,7 +1694,7 @@ ExAdd(RnCtx* ctx, int argc, Value* stack){
                 v.as_int64 = i64 + ii64;
                 RnValueRef(ctx, &out, v, VT_INT64);
             }else if(tmp.type == VT_DOUBLE){
-                d64 = i64;
+                d64 = (double)i64;
                 dd64 = tmp.value.as_double;
                 v.as_double = d64 + dd64;
                 RnValueRef(ctx, &out, v, VT_DOUBLE);
@@ -1704,7 +1704,7 @@ ExAdd(RnCtx* ctx, int argc, Value* stack){
         }else if(out.type == VT_DOUBLE){
             d64 = out.value.as_double;
             if(tmp.type == VT_INT64){
-                dd64 = tmp.value.as_int64;
+                dd64 = (double)tmp.value.as_int64;
                 v.as_double = d64 + dd64;
                 RnValueRef(ctx, &out, v, VT_DOUBLE);
             }else if(tmp.type == VT_DOUBLE){
@@ -1809,7 +1809,7 @@ ExMul(RnCtx* ctx, int argc, Value* stack){
                 v.as_int64 = i64 * ii64;
                 RnValueRef(ctx, &out, v, VT_INT64);
             }else if(tmp.type == VT_DOUBLE){
-                d64 = i64;
+                d64 = (double)i64;
                 dd64 = tmp.value.as_double;
                 v.as_double = d64 * dd64;
                 RnValueRef(ctx, &out, v, VT_DOUBLE);
@@ -1819,7 +1819,7 @@ ExMul(RnCtx* ctx, int argc, Value* stack){
         }else if(out.type == VT_DOUBLE){
             d64 = out.value.as_double;
             if(tmp.type == VT_INT64){
-                dd64 = tmp.value.as_int64;
+                dd64 = (double)tmp.value.as_int64;
                 v.as_double = d64 * dd64;
                 RnValueRef(ctx, &out, v, VT_DOUBLE);
             }else if(tmp.type == VT_DOUBLE){
@@ -1955,7 +1955,7 @@ ExLt(RnCtx* ctx, int argc, Value* stack){
                     r = 0;
                     break;
                 }
-                v.as_double = tmp.value.as_int64;
+                v.as_double = (double)tmp.value.as_int64;
             }else{
                 abort();
             }
@@ -2034,7 +2034,7 @@ ExLtEq(RnCtx* ctx, int argc, Value* stack){
                     r = 0;
                     break;
                 }
-                v.as_double = tmp.value.as_int64;
+                v.as_double = (double)tmp.value.as_int64;
             }else{
                 abort();
             }
@@ -2113,7 +2113,7 @@ ExGt(RnCtx* ctx, int argc, Value* stack){
                     r = 0;
                     break;
                 }
-                v.as_double = tmp.value.as_int64;
+                v.as_double = (double)tmp.value.as_int64;
             }else{
                 abort();
             }
@@ -2192,7 +2192,7 @@ ExGtEq(RnCtx* ctx, int argc, Value* stack){
                     r = 0;
                     break;
                 }
-                v.as_double = tmp.value.as_int64;
+                v.as_double = (double)tmp.value.as_int64;
             }else{
                 abort();
             }
@@ -2264,7 +2264,7 @@ ExFxToFl(RnCtx* ctx, Value* out, Value* x){
         if(x->type != VT_INT64){
             abort();
         }
-        RnDouble(ctx, out, x->value.as_int64);
+        RnDouble(ctx, out, (double)x->value.as_int64);
     }
 }
 
@@ -2279,9 +2279,9 @@ ExFxExpt(RnCtx* ctx, Value* out, Value* x, Value* y){
         abort();
     }
 
-    a = x->value.as_int64;
-    b = y->value.as_int64;
-    RnInt64(ctx, out, pow(a,b));
+    a = (double)x->value.as_int64;
+    b = (double)y->value.as_int64;
+    RnInt64(ctx, out, (int64_t)pow(a,b));
 }
 
 static void
@@ -2367,7 +2367,7 @@ ExFlToFx(RnCtx* ctx, Value* out, Value* x){
         if(x->type != VT_DOUBLE){
             abort();
         }
-        RnInt64(ctx, out, x->value.as_double);
+        RnInt64(ctx, out, (int64_t)x->value.as_double);
     }
 }
 
@@ -2943,7 +2943,7 @@ ExVecSetEx(RnCtx* ctx, Value* out, Value* vec, Value* idx, Value* obj){
             if(e > vec->value.as_bytevector->len){
                 abort();
             }
-            vec->value.as_bytevector->buf[e] = obj->value.as_int64;
+            vec->value.as_bytevector->buf[e] = (unsigned char)obj->value.as_int64;
             break;
         default:
             abort();
@@ -3051,7 +3051,7 @@ ExVecFillEx(RnCtx* ctx, Value* out, Value* vec, Value* obj,
                 abort();
             }
             for(i = f; i != t; i++){
-                vec->value.as_bytevector->buf[i] = obj->value.as_int64;
+                vec->value.as_bytevector->buf[i] = (unsigned char)obj->value.as_int64;
             }
             break;
         default:

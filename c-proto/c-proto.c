@@ -1627,7 +1627,7 @@ load_bootstrap(RnCtx* ctx, const uint8_t* bin){
 
     /* Chars */
     for(i = 0; i != chars; i++){
-        RnChar(ctx, &v[cur+i], get_leb128(&p));
+        RnChar(ctx, &v[cur+i], (int)get_leb128(&p));
     }
     cur += chars;
 
@@ -2051,7 +2051,7 @@ call_vm_exit(RnCtx* ctx, struct vmstate_s* state){
     if(state->stack.value.as_rib->type[0] != VT_INT64){
         abort();
     }
-    state->exit_mode = state->stack.value.as_rib->field[0].as_int64;
+    state->exit_mode = (int)state->stack.value.as_rib->field[0].as_int64;
     if(state->exit_mode == 1){
         // FIXME: Raise it instead
         exit((int)state->result.value.as_int64);
@@ -2186,7 +2186,7 @@ vmstep(RnCtx* ctx, struct vmstate_s* state){
             if(state->opnd.type != VT_INT64){
                 abort();
             }
-            state->vals = state->opnd.value.as_int64;
+            state->vals = (int)state->opnd.value.as_int64;
             break;
         case 6: /* Const(Obj) */
             state->vals = -1;
@@ -2275,7 +2275,7 @@ parse_ribcode(RnCtx* ctx, Value* code, Value* vec){
     size_t vidx;
     Value zero;
     size_t idx;
-    size_t i;
+    int i;
 
     RnEnter(ctx, &frame);
     RnValueLink(ctx, &tbl);
