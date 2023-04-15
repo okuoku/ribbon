@@ -20,12 +20,19 @@ typedef SSIZE_T ssize_t;
 #include "c-proto.h"
 
 /* Panic */
-static void
+
+#if defined(_MSC_VER)
+#define NORETURN __declspec(noreturn) 
+#else
+#define NORETURN __attribute__ ((noreturn))
+#endif
+
+NORETURN static void
 RnPanic(void){
     abort();
 }
 
-static void
+NORETURN static void
 RnLowMemory(void){
     abort();
 }
@@ -56,7 +63,6 @@ gettype(ObjHeader* header){
         return VT_HASHTABLE;
     }else{
         RnPanic();
-        return VT_EMPTY;
     }
 }
 
@@ -1187,7 +1193,6 @@ ht_hash_eqv(Value* x){
         case VT_HASHTABLE: /* UNIMPL */
         default:
             RnPanic();
-            return 0;
     }
 }
 
