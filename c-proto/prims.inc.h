@@ -911,7 +911,6 @@ utf8_decode(const char* start, const char* stop){
             return acc;
     }
     abort();
-    return 0;
 }
 
 static void
