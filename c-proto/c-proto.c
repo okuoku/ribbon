@@ -2,12 +2,6 @@
 //#define TRACE
 #define DEBUG_FILLFREED
 
-#if defined(_MSC_VER)
-#include <BaseTsd.h>
-// FIXME: Drop use of ssize_t
-typedef SSIZE_T ssize_t;
-#endif
-
 /* Ribbon Scheme proto */
 #include <stdint.h>
 #include <stdlib.h>
@@ -1196,17 +1190,17 @@ ht_hash_eqv(Value* x){
     }
 }
 
-static ssize_t /* loc or -1 */
+static size_t /* loc or SIZE_MAX */
 ht_lookup(RnCtx* ctx, ObjHashtable* ht, size_t start, Value* key){
     ObjRib* r;
     Value v;
-    ssize_t loc;
+    size_t loc;
     int e;
     RnValueLink(ctx, &v);
     r = ht->table[start].as_rib;
     while(1){
         if(! r){
-            loc = -1; /* Not found */
+            loc = SIZE_MAX; /* Not found */
             break;
         }
         loc = r->field[0].as_int64;
@@ -1340,7 +1334,7 @@ ht_hash(ObjHashtable* ht, Value* key){
 void
 RnHashtableRef(RnCtx* ctx, Value* out, Value* ht, Value* key, Value* def){
     size_t hashk;
-    ssize_t loc;
+    size_t loc;
     ObjHashtable* hto;
     Value frame;
     RnEnter(ctx, &frame);
@@ -1351,7 +1345,7 @@ RnHashtableRef(RnCtx* ctx, Value* out, Value* ht, Value* key, Value* def){
     hto = ht->value.as_hashtable;
     hashk = ht_hash(hto, key);
     loc = ht_lookup(ctx, hto, hashk, key);
-    if(loc == -1){
+    if(loc == SIZE_MAX){
         RnValueRef(ctx, out, def->value, def->type);
     }else{
         RnValueRef(ctx, out, hto->values[loc], hto->valuetypes[loc]);
@@ -1362,7 +1356,7 @@ RnHashtableRef(RnCtx* ctx, Value* out, Value* ht, Value* key, Value* def){
 void
 RnHashtableSet(RnCtx* ctx, Value* ht, Value* key, Value* obj){
     size_t hashk;
-    ssize_t loc;
+    size_t loc;
     Value frame;
     Value r;
     Value me;
@@ -1390,7 +1384,7 @@ RnHashtableSet(RnCtx* ctx, Value* ht, Value* key, Value* obj){
         RnRef(ctx, hto->table[hashk], VT_RIB);
     }else{
         loc = ht_lookup(ctx, hto, hashk, key);
-        if(loc != -1){
+        if(loc != SIZE_MAX){
             /* Replace value on loc */
             RnUnref(ctx, &hto->values[loc], &hto->valuetypes[loc]);
             hto->values[loc] = obj->value;
@@ -1897,7 +1891,7 @@ static void
 call_lambda(RnCtx* ctx, struct vmstate_s* state){
     Value tmp;
     Value acc;
-    ssize_t argnc, layout, nargs, res;
+    int argnc, layout, nargs, res;
     RnValueLink(ctx, &tmp);
     RnValueLink(ctx, &acc);
     /* reg = proc */
@@ -1912,7 +1906,7 @@ call_lambda(RnCtx* ctx, struct vmstate_s* state){
     if(state->opnd.value.as_rib->type[0] != VT_INT64){
         abort();
     }
-    layout = state->opnd.value.as_rib->field[0].as_int64;
+    layout = (int)state->opnd.value.as_rib->field[0].as_int64;
     argnc = (state->vals >= 0 && layout < 0) ? state->vals + 1 + layout : 0;
     nargs = (layout < 0) ? -layout : layout;
     if((state->vals >= 0) && argnc < 0 && state->vals < nargs){

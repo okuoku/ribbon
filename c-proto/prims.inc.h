@@ -747,9 +747,9 @@ ExIntegerToChar(RnCtx* ctx, Value* out, Value* i){
 
 static void
 ExUtf8ToString_3_1(RnCtx* ctx, Value* out, Value* bv, Value* start, Value* end){
-    ssize_t istart;
-    ssize_t iend;
-    ssize_t ilen;
+    size_t istart;
+    size_t iend;
+    size_t ilen;
     if(start->type != VT_INT64){
         abort();
     }
@@ -761,9 +761,6 @@ ExUtf8ToString_3_1(RnCtx* ctx, Value* out, Value* bv, Value* start, Value* end){
     }
     istart = start->value.as_int64;
     iend = end->value.as_int64;
-    if(istart < 0){
-        abort();
-    }
     if(istart > iend){
         abort();
     }
@@ -774,9 +771,9 @@ ExUtf8ToString_3_1(RnCtx* ctx, Value* out, Value* bv, Value* start, Value* end){
 
 static void
 ExUtf8ToString_2_1(RnCtx* ctx, Value* out, Value* bv, Value* start){
-    ssize_t istart;
-    ssize_t iend;
-    ssize_t ilen;
+    size_t istart;
+    size_t iend;
+    size_t ilen;
     if(start->type != VT_INT64){
         abort();
     }
@@ -785,9 +782,6 @@ ExUtf8ToString_2_1(RnCtx* ctx, Value* out, Value* bv, Value* start){
     }
     istart = start->value.as_int64;
     iend = bv->value.as_bytevector->len;
-    if(istart < 0){
-        abort();
-    }
     if(istart > iend){
         abort();
     }
