@@ -1172,7 +1172,7 @@ static uint64_t
 ht_hash_eqv(Value* x){
     switch(x->type){
         case VT_ZONE0:
-            return 181 * (int)x->value.as_zone0;
+            return (uint64_t)181 * (int)x->value.as_zone0;
         case VT_INT64:
             return x->value.as_int64;
         case VT_DOUBLE:
@@ -1180,7 +1180,7 @@ ht_hash_eqv(Value* x){
              * hash value */
             return x->value.as_int64;
         case VT_CHAR:
-            return 781 * x->value.as_char;
+            return (uint64_t)781 * x->value.as_char;
         case VT_STRING:
             return ht_hash_blob(x);
         case VT_BYTEVECTOR:
