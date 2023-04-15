@@ -1204,9 +1204,6 @@ ht_lookup(RnCtx* ctx, ObjHashtable* ht, size_t start, Value* key){
             break;
         }
         loc = r->field[0].as_int64;
-        if(loc < 0){
-            RnPanic();
-        }
         if((size_t)loc >= ht->containercount){
             RnPanic();
         }
