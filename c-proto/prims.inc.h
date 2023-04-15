@@ -993,9 +993,12 @@ vector_to_string(RnCtx* ctx, Value* out, ObjVector* vec,
 
     str = (ObjString*)malloc(sizeof(ObjString));
     if(! str){
-        abort();
+        RnLowMemory();
     }
     s = (char*)malloc(siz + 1);
+    if(! s){
+        RnLowMemory();
+    }
     s[siz] = 0;
 
     /* Pass2: Convert to utf8 blob */
@@ -1126,7 +1129,7 @@ list_to_vector(RnCtx* ctx, Value* out, Value* lis, int skip, int limit){
     /* Pass2: Construct string */
     s = (char*)malloc(siz + 1);
     if(! s){
-        abort();
+        RnLowMemory();
     }
     p = s;
     pend = s + siz;
@@ -1155,6 +1158,9 @@ list_to_vector(RnCtx* ctx, Value* out, Value* lis, int skip, int limit){
     }
 
     str = (ObjString*)malloc(sizeof(ObjString));
+    if(! str){
+        RnLowMemory();
+    }
     str->str = (const char*)s;
     str->refcnt = 0;
     str->len = siz;
@@ -3103,6 +3109,9 @@ ExVecAppend(RnCtx* ctx, int argc, Value* stack){
     }
 
     s = (char*)malloc(total);
+    if(! s){
+        RnLowMemory();
+    }
 
     /* Pass2: Pop args and generate total string */
     loc = total;

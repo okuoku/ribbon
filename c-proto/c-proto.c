@@ -19,6 +19,17 @@ typedef SSIZE_T ssize_t;
 
 #include "c-proto.h"
 
+/* Panic */
+static void
+RnPanic(void){
+    abort();
+}
+
+static void
+RnLowMemory(void){
+    abort();
+}
+
 /* GC */
 
 static void RnDestroyRib(RnCtx* ctx, ObjRib* rib);
@@ -44,7 +55,8 @@ gettype(ObjHeader* header){
     }else if(x == GC_TYPE_HASHTABLE){
         return VT_HASHTABLE;
     }else{
-        abort();
+        RnPanic();
+        return VT_EMPTY;
     }
 }
 
@@ -70,7 +82,7 @@ gcref_value(ValueContainer vc, ValueType t){
             vc.as_hashtable->header.gc_refinfo -= 8;
             break;
         default:
-            abort();
+            RnPanic();
             break;
     }
 }
@@ -111,7 +123,7 @@ gcwalk_gcref(ObjHeader* h){
             }
             break;
         default:
-            abort();
+            RnPanic();
             break;
     }
 }
@@ -140,7 +152,7 @@ rescue_value(ObjHeader* last, ValueContainer vc, ValueType t){
             h = &vc.as_hashtable->header;
             break;
         default:
-            abort();
+            RnPanic();
             break;
     }
 
@@ -200,7 +212,7 @@ gcwalk_rescue(ObjHeader* last, ObjHeader* h){
             }
             break;
         default:
-            abort();
+            RnPanic();
             break;
     }
 }
@@ -222,10 +234,10 @@ RnGc(RnCtx* ctx){
     while(cur){
         cur->gc_refinfo &= 6;
         if(cur->refcnt == 0){
-            abort();
+            RnPanic();
         }
         if(cur->refcnt == REF_INDELETE){
-            abort();
+            RnPanic();
         }
         cur->gc_refinfo += cur->refcnt * 8;
         lastlive.gc_prev = cur;
@@ -235,7 +247,7 @@ RnGc(RnCtx* ctx){
     /* Link lastlive */
     if(lastlive.gc_prev){
         if(lastlive.gc_prev->gc_next != 0){
-            abort();
+            RnPanic();
         }
         lastlive.gc_prev->gc_next = &lastlive;
     }
@@ -254,7 +266,7 @@ RnGc(RnCtx* ctx){
         typetag = cur->gc_refinfo & 6;
         curnext = cur->gc_next;
         if(cur->gc_refinfo >= ON_GARBAGE_LIST_MIN){
-            abort();
+            RnPanic();
         }
         if(gcrefcnt != 0){
             /* It's reachable object, walk and move its contents
@@ -283,7 +295,7 @@ RnGc(RnCtx* ctx){
     /* Unlink lastlive */
     if(lastlive.gc_prev){
         if(lastlive.gc_prev->gc_next != &lastlive){
-            abort();
+            RnPanic();
         }
         lastlive.gc_prev->gc_next = 0;
     }
@@ -304,7 +316,7 @@ RnGc(RnCtx* ctx){
                 RnDestroyHashtable(ctx, (ObjHashtable*)cur);
                 break;
             default:
-                abort();
+                RnPanic();
                 break;
         }
         cur = curnext;
@@ -369,7 +381,7 @@ void
 RnLeave(RnCtx* ctx, Value* current_frame){
     Value* cur;
     if(ctx->current_frame != current_frame){
-        abort();
+        RnPanic();
     }
     cur = current_frame->root;
     while(cur){
@@ -387,7 +399,7 @@ static void
 RnRefRib(RnCtx* ctx, ObjRib* rib){
     (void) ctx;
     if(rib->header.refcnt == REF_INDELETE){
-        abort();
+        RnPanic();
     }
     rib->header.refcnt++;
 }
@@ -412,7 +424,7 @@ RnUnrefRib(RnCtx* ctx, ObjRib* rib){
         return;
     }
     if(rib->header.refcnt == 0){
-        abort();
+        RnPanic();
     }
     rib->header.refcnt--;
     if(rib->header.refcnt == 0){
@@ -432,7 +444,7 @@ static void
 RnRefVector(RnCtx* ctx, ObjVector* vector){
     (void) ctx;
     if(vector->header.refcnt == REF_INDELETE){
-        abort();
+        RnPanic();
     }
     vector->header.refcnt++;
 }
@@ -463,7 +475,7 @@ RnUnrefVector(RnCtx* ctx, ObjVector* vector){
         return;
     }
     if(vector->header.refcnt == 0){
-        abort();
+        RnPanic();
     }
     vector->header.refcnt--;
     if(vector->header.refcnt == 0){
@@ -489,7 +501,7 @@ static void
 RnRefString(RnCtx* ctx, ObjString* string){
     (void) ctx;
     if(string->refcnt == REF_INDELETE){
-        abort();
+        RnPanic();
     }
     string->refcnt++;
 }
@@ -498,7 +510,7 @@ static void
 RnUnrefString(RnCtx* ctx, ObjString* string){
     (void) ctx;
     if(string->refcnt == 0){
-        abort();
+        RnPanic();
     }
     string->refcnt--;
     if(string->refcnt == 0){
@@ -517,7 +529,7 @@ static void
 RnRefBytevector(RnCtx* ctx, ObjBytevector* bytevector){
     (void) ctx;
     if(bytevector->refcnt == REF_INDELETE){
-        abort();
+        RnPanic();
     }
     bytevector->refcnt++;
 }
@@ -526,7 +538,7 @@ static void
 RnUnrefBytevector(RnCtx* ctx, ObjBytevector* bytevector){
     (void) ctx;
     if(bytevector->refcnt == 0){
-        abort();
+        RnPanic();
     }
     bytevector->refcnt--;
     if(bytevector->refcnt == 0){
@@ -545,7 +557,7 @@ static void
 RnRefHashtable(RnCtx* ctx, ObjHashtable* hashtable){
     (void) ctx;
     if(hashtable->header.refcnt == REF_INDELETE){
-        abort();
+        RnPanic();
     }
     hashtable->header.refcnt++;
 }
@@ -582,7 +594,7 @@ RnDestroyHashtable(RnCtx* ctx, ObjHashtable* hashtable){
                                  hashtable->keytypes[i]);
                 break;
             default:
-                abort();
+                RnPanic();
                 break;
         }
     }
@@ -621,7 +633,7 @@ RnUnrefHashtable(RnCtx* ctx, ObjHashtable* hashtable){
         return;
     }
     if(hashtable->header.refcnt == 0){
-        abort();
+        RnPanic();
     }
     hashtable->header.refcnt--;
     if(hashtable->header.refcnt == 0){
@@ -655,7 +667,7 @@ RnUnrefHashtable(RnCtx* ctx, ObjHashtable* hashtable){
                             &hashtable->keytypes[i]);
                     break;
                 default:
-                    abort();
+                    RnPanic();
                     break;
             }
         }
@@ -717,7 +729,7 @@ RnRef(RnCtx* ctx, ValueContainer obj, ValueType type){
             /* Do nothing, ctx always refs it */
             break;
         default:
-            abort();
+            RnPanic();
             break;
     }
 }
@@ -748,7 +760,7 @@ RnUnrefInDestroy(RnCtx* ctx, ValueContainer obj, ValueType type){
             /* Do nothing? Should be freed with ctx */
             break;
         default:
-            abort();
+            RnPanic();
             break;
     }
 }
@@ -783,7 +795,7 @@ RnUnref(RnCtx* ctx, ValueContainer* obj, ValueType* type){
             /* Do nothing? Should be freed with ctx */
             break;
         default:
-            abort();
+            RnPanic();
             break;
     }
     *type = VT_EMPTY;
@@ -818,7 +830,7 @@ RnObjHeaderInit(RnCtx* ctx, ObjHeader* header, ValueType t){
             header->gc_refinfo = GC_TYPE_HASHTABLE;
             break;
         default:
-            abort();
+            RnPanic();
             break;
     }
     header->gc_prev = &ctx->gcroot;
@@ -844,7 +856,7 @@ void
 RnRibSet(RnCtx* ctx, Value* target, Value* obj, int field){
     ObjRib* r;
     if(target->type != VT_RIB){
-        abort();
+        RnPanic();
     }
     r = target->value.as_rib;
     RnUnref(ctx, &r->field[field], &r->type[field]);
@@ -857,7 +869,7 @@ void
 RnRibRef(RnCtx* ctx, Value* out, Value* obj, int field){
     ObjRib* r;
     if(obj->type != VT_RIB){
-        abort();
+        RnPanic();
     }
     r = obj->value.as_rib;
     RnValueRef(ctx, out, r->field[field], r->type[field]);
@@ -871,7 +883,7 @@ RnRib(RnCtx* ctx, Value* out, Value* field0, Value* field1, Value* field2){
     RnValueLink(ctx, &v);
     r = (ObjRib*)malloc(sizeof(ObjRib));
     if(!r){
-        abort();
+        RnLowMemory();
     }
     RnObjHeaderInit(ctx, (ObjHeader*)r, VT_RIB);
     r->type[0] = r->type[1] = r->type[2] = VT_EMPTY;
@@ -928,15 +940,15 @@ RnVector(RnCtx* ctx, Value* out, size_t len){
     ValueContainer v;
     r = (ObjVector*)malloc(sizeof(ObjVector));
     if(!r){
-        abort();
+        RnLowMemory();
     }
     r->values = (ValueContainer*)malloc(sizeof(ValueContainer) * len);
     if(! r->values){
-        abort();
+        RnLowMemory();
     }
     r->types = (ValueType*)malloc(sizeof(ValueType) * len);
     if(! r->types){
-        abort();
+        RnLowMemory();
     }
     RnObjHeaderInit(ctx, (ObjHeader*)r, VT_VECTOR);
     for(i = 0; i!=len; i++){
@@ -983,11 +995,11 @@ RnBytevector(RnCtx* ctx, Value* out, size_t len){
 
     bv = (ObjBytevector*)malloc(sizeof(ObjBytevector));
     if(! bv){
-        abort();
+        RnLowMemory();
     }
     bv->buf = (uint8_t*)malloc(len);
     if(! bv->buf){
-        abort();
+        RnLowMemory();
     }
     bv->len = len;
     bv->refcnt = 0;
@@ -1003,12 +1015,12 @@ RnString(RnCtx* ctx, Value* out, const char* name, size_t len){
     ValueContainer v;
     str = (ObjString*)malloc(sizeof(ObjString));
     if(! str){
-        abort();
+        RnLowMemory();
     }
     str->refcnt = 0;
     buf = (char*)malloc(len + 1);
     if(! buf){
-        abort();
+        RnLowMemory();
     }
     memcpy(buf, name, len);
     buf[len] = 0;
@@ -1145,7 +1157,7 @@ ht_eqv_eqv(Value* x, Value* y){
             break;
         case VT_HASHTABLE: /* UNIMPL */
         default:
-            abort();
+            RnPanic();
     }
     return 0;
 }
@@ -1174,7 +1186,8 @@ ht_hash_eqv(Value* x){
             return (uintptr_t)x->value.as_vector;
         case VT_HASHTABLE: /* UNIMPL */
         default:
-            abort();
+            RnPanic();
+            return 0;
     }
 }
 
@@ -1193,10 +1206,10 @@ ht_lookup(RnCtx* ctx, ObjHashtable* ht, size_t start, Value* key){
         }
         loc = r->field[0].as_int64;
         if(loc < 0){
-            abort();
+            RnPanic();
         }
         if((size_t)loc >= ht->containercount){
-            abort();
+            RnPanic();
         }
         switch(ht->hashtable_type){
             case HT_BLOBKEY:
@@ -1212,7 +1225,7 @@ ht_lookup(RnCtx* ctx, ObjHashtable* ht, size_t start, Value* key){
                 e = ht_eqv_eqv(&v, key);
                 break;
             default:
-                abort();
+                RnPanic();
                 break;
         }
         if(e){
@@ -1241,23 +1254,23 @@ ht_add_value(RnCtx* ctx, ObjHashtable* ht, Value* key, Value* obj){
         ht->keys = (ValueContainer*)realloc(ht->keys, 
                                             sizeof(ValueContainer) * newsize);
         if(! ht->keys){
-            abort();
+            RnLowMemory();
         }
         ht->values = (ValueContainer*)realloc(ht->values, 
                                               sizeof(ValueContainer) * newsize);
         if(! ht->values){
-            abort();
+            RnLowMemory();
         }
         ht->valuetypes = (ValueType*)realloc(ht->valuetypes, 
                                              sizeof(ValueType) * newsize);
         if(! ht->valuetypes){
-            abort();
+            RnLowMemory();
         }
         if(ht->keytypes){
             ht->keytypes = (ValueType*)realloc(ht->keytypes,
                                                sizeof(ValueType) * newsize);
             if(! ht->keytypes){
-                abort();
+                RnLowMemory();
             }
 
         }
@@ -1288,7 +1301,7 @@ ht_add_value(RnCtx* ctx, ObjHashtable* ht, Value* key, Value* obj){
             RnRef(ctx, ht->keys[target], ht->keytypes[target]);
             break;
         default:
-            abort();
+            RnPanic();
             break;
     }
 
@@ -1312,7 +1325,7 @@ ht_hash(ObjHashtable* ht, Value* key){
             hashk = ht_hash_eqv(key);
             break;
         default:
-            abort();
+            RnPanic();
             break;
     }
     return hashk % ht->tablesize;
@@ -1417,14 +1430,14 @@ RnHashtable(RnCtx* ctx, Value* out, HashtableClass htc){
     }
     ht = (ObjHashtable*)malloc(sizeof(ObjHashtable));
     if(! ht){
-        abort();
+        RnLowMemory();
     }
     RnObjHeaderInit(ctx, (ObjHeader*)ht, VT_HASHTABLE);
 
     ht->tablesize = 57;
     ht->table = (ValueContainer*)malloc(sizeof(ValueContainer) * ht->tablesize);
     if(! ht->table){
-        abort();
+        RnLowMemory();
     }
 
     ht->containercount = 16;
@@ -1434,20 +1447,20 @@ RnHashtable(RnCtx* ctx, Value* out, HashtableClass htc){
 
     ht->keys = (ValueContainer*)malloc(sizeof(ValueContainer) * ht->containercount);
     if(! ht->keys){
-        abort();
+        RnLowMemory();
     }
     ht->valuetypes = (ValueType*)malloc(sizeof(ValueType) * ht->containercount);
     if(! ht->valuetypes){
-        abort();
+        RnLowMemory();
     }
     ht->values = (ValueContainer*)malloc(sizeof(ValueContainer) * ht->containercount);
     if(! ht->values){
-        abort();
+        RnLowMemory();
     }
     if(type == HT_EQV){
         ht->keytypes = (ValueType*)malloc(sizeof(ValueType) * ht->containercount);
         if(! ht->keytypes){
-            abort();
+            RnLowMemory();
         }
     }else{
         ht->keytypes = 0;
@@ -1527,7 +1540,7 @@ get_cstr(const uint8_t** cur){
     len = get_leb128(cur);
     p = (char*)malloc(len+1);
     if(! p){
-        abort();
+        RnLowMemory();
     }
     for(i=0; i!=len; i++){
         p[i] = get_b8(cur);
@@ -1580,13 +1593,13 @@ load_bootstrap(RnCtx* ctx, const uint8_t* bin){
     vectors = get_leb128(&p);
 
     if(4 != zone0_count){
-        abort();
+        RnPanic();
     }
 
     RnEnter(ctx, &frame);
     v = (Value*)malloc(sizeof(Value)*total);
     if(! v){
-        abort();
+        RnLowMemory();
     }
     for(cur = 0; cur != total; cur++){
         RnValueLink(ctx, &v[cur]);
@@ -1640,7 +1653,7 @@ load_bootstrap(RnCtx* ctx, const uint8_t* bin){
                 free(num);
                 break;
             default:
-                abort();
+                RnPanic();
                 break;
         }
     }
@@ -2236,7 +2249,7 @@ read_vec_offset(RnCtx* ctx, Value* vec, size_t offs){
     RnValueLink(ctx, &tmp);
     RnVectorRef(ctx, &tmp, vec, offs);
     if(tmp.type != VT_INT64){
-        abort();
+        RnPanic();
     }
     r = (size_t)tmp.value.as_int64;
     RnValueUnlink(ctx, &tmp);
@@ -2295,7 +2308,7 @@ parse_ribcode(RnCtx* ctx, Value* code, Value* vec){
                 RnVectorRef(ctx, &v, &tbl, vidx);
             }
             if(v.type == VT_EMPTY){
-                abort();
+                RnPanic();
             }
             RnRibSet(ctx, &r, &v, i);
         }
@@ -2304,7 +2317,7 @@ parse_ribcode(RnCtx* ctx, Value* code, Value* vec){
     /* Don't access `vec` to support code == vec case */
     RnVectorRef(ctx, code, &ribs, (out - offs_rib) / 3);
     if(code->type != VT_RIB){
-        abort();
+        RnPanic();
     }
     RnLeave(ctx, &frame);
 }
@@ -2445,7 +2458,7 @@ enter_externals(RnCtx* ctx){
         RnString(ctx, &symnamestr, 
                  vm_externals[i].symname, vm_externals[i].namelen);
         if(strlen(vm_externals[i].symname) != vm_externals[i].namelen){
-            abort();
+            RnPanic();
         }
         RnUninternedSymbol(ctx, &sym, &symnamestr);
         RnHashtableRef(ctx, &tmp, &ctx->ht_global, &symnamestr, &sym);
@@ -2523,14 +2536,14 @@ main(int ac, char** av){
     /* Load bootfile */
     bin = fopen(bootfile, "rb");
     if(! bin){
-        abort();
+        RnPanic();
     }
     fseek(bin, 0, SEEK_END);
     binsize = ftell(bin);
     fseek(bin, 0, SEEK_SET);
     bootstrap = (uint8_t*)malloc(binsize);
     if(! bootstrap){
-        abort();
+        RnLowMemory();
     }
     fread(bootstrap, binsize, 1, bin);
     fclose(bin);
