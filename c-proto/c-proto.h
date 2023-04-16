@@ -156,7 +156,27 @@ struct RnCtx_s { /* Ribbon Context */
 
 typedef struct RnCtx_s RnCtx;
 
-typedef void (*RnVmExFunc)(RnCtx* ctx, int argc, Value* stack);
+enum RnResult_e {
+    RN_SUCCESS = 0,
+    RN_EXCEPTION
+};
+
+typedef enum RnResult_e RnResult;
+
+typedef RnResult (*RnVmExFunc)(RnCtx* ctx, int argc, Value* stack);
+
+#ifndef _MSC_VER
+#define RNFUNC_LABEL_ATTRIBUTE __attribute__((unused))
+#endif
+
+#define RNFUNC_BEGIN RnResult rnresult = RN_SUCCESS;
+#define RNFUNC_END rnresult_return: RNFUNC_LABEL_ATTRIBUTE; return rnresult;
+#define RNFUNC_CALL(ctx,x) do { \
+    rnresult = x; \
+    if(rnresult != RN_SUCCESS){ \
+        abort(); \
+    } \
+} while(0)
 
 struct RnVmEx_s {
     const char* symname;

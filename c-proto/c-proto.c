@@ -852,31 +852,36 @@ RnObjHeaderUnlink(RnCtx* ctx, ObjHeader* header){
     }
 }
 
-void
+RnResult
 RnRibSet(RnCtx* ctx, Value* target, Value* obj, int field){
+    RNFUNC_BEGIN;
     ObjRib* r;
     if(target->type != VT_RIB){
-        RnPanic();
+        abort();
     }
     r = target->value.as_rib;
     RnUnref(ctx, &r->field[field], &r->type[field]);
     r->field[field] = obj->value;
     r->type[field] = obj->type;
     RnRef(ctx, r->field[field], r->type[field]);
+    RNFUNC_END;
 }
 
-void
+RnResult
 RnRibRef(RnCtx* ctx, Value* out, Value* obj, int field){
+    RNFUNC_BEGIN;
     ObjRib* r;
     if(obj->type != VT_RIB){
-        RnPanic();
+        abort();
     }
     r = obj->value.as_rib;
     RnValueRef(ctx, out, r->field[field], r->type[field]);
+    RNFUNC_END;
 }
 
-void 
+RnResult
 RnRib(RnCtx* ctx, Value* out, Value* field0, Value* field1, Value* field2){
+    RNFUNC_BEGIN;
     ObjRib* r;
     Value v;
     ValueContainer vc;
@@ -889,52 +894,64 @@ RnRib(RnCtx* ctx, Value* out, Value* field0, Value* field1, Value* field2){
     r->type[0] = r->type[1] = r->type[2] = VT_EMPTY;
     vc.as_rib = r;
     RnValueRef(ctx, &v, vc, VT_RIB);
-    RnRibSet(ctx, &v, field0, 0);
-    RnRibSet(ctx, &v, field1, 1);
-    RnRibSet(ctx, &v, field2, 2);
+    RNFUNC_CALL(ctx, RnRibSet(ctx, &v, field0, 0));
+    RNFUNC_CALL(ctx, RnRibSet(ctx, &v, field1, 1));
+    RNFUNC_CALL(ctx, RnRibSet(ctx, &v, field2, 2));
     RnValueRef(ctx, out, v.value, VT_RIB);
     RnValueUnlink(ctx, &v);
+    RNFUNC_END;
 }
 
-void
+RnResult
 RnInt64(RnCtx* ctx, Value* out, int64_t i64){
+    RNFUNC_BEGIN;
     ValueContainer v;
     v.as_int64 = i64;
     RnValueRef(ctx, out, v, VT_INT64);
+    RNFUNC_END;
 }
 
-void
+RnResult
 RnDouble(RnCtx* ctx, Value* out, double d){
+    RNFUNC_BEGIN;
     ValueContainer v;
     v.as_double = d;
     RnValueRef(ctx, out, v, VT_DOUBLE);
+    RNFUNC_END;
 }
 
-void
+RnResult
 RnChar(RnCtx* ctx, Value* out, int c){
+    RNFUNC_BEGIN;
     ValueContainer v;
     v.as_char = c;
     RnValueRef(ctx, out, v, VT_CHAR);
+    RNFUNC_END;
 }
 
-void
+RnResult
 RnZone0(RnCtx* ctx, Value* out, ValueZone0 z){
+    RNFUNC_BEGIN;
     ValueContainer v;
     v.as_zone0 = z;
     RnValueRef(ctx, out, v, VT_ZONE0);
+    RNFUNC_END;
 }
 
-void
+RnResult
 RnCons(RnCtx* ctx, Value* out, Value* car, Value* cdr){
+    RNFUNC_BEGIN;
     Value id;
     RnValueLink(ctx, &id);
-    RnInt64(ctx, &id, 0 /* Pair */);
-    RnRib(ctx, out, car, cdr, &id);
+    RNFUNC_CALL(ctx, RnInt64(ctx, &id, 0 /* Pair */));
+    RNFUNC_CALL(ctx, RnRib(ctx, out, car, cdr, &id));
     RnValueUnlink(ctx, &id);
+    RNFUNC_END;
 }
 
-void
+RnResult
 RnVector(RnCtx* ctx, Value* out, size_t len){
+    RNFUNC_BEGIN;
     size_t i;
     ObjVector* r;
     ValueContainer v;
@@ -957,10 +974,12 @@ RnVector(RnCtx* ctx, Value* out, size_t len){
     r->length = len;
     v.as_vector = r;
     RnValueRef(ctx, out, v, VT_VECTOR);
+    RNFUNC_END;
 }
 
-void
+RnResult
 RnVectorRef(RnCtx* ctx, Value* out, Value* target, size_t idx){
+    RNFUNC_BEGIN;
     ObjVector* vec;
     if(target->type != VT_VECTOR && target->type != VT_SIMPLE_STRUCT){
         abort();
@@ -970,10 +989,12 @@ RnVectorRef(RnCtx* ctx, Value* out, Value* target, size_t idx){
         abort();
     }
     RnValueRef(ctx, out, vec->values[idx], vec->types[idx]);
+    RNFUNC_END;
 }
 
-void
+RnResult
 RnVectorSet(RnCtx* ctx, Value* target, Value* obj, size_t idx){
+    RNFUNC_BEGIN;
     ObjVector* vec;
     if(target->type != VT_VECTOR && target->type != VT_SIMPLE_STRUCT){
         abort();
@@ -986,10 +1007,12 @@ RnVectorSet(RnCtx* ctx, Value* target, Value* obj, size_t idx){
     RnUnref(ctx, &vec->values[idx], &vec->types[idx]);
     vec->values[idx] = obj->value;
     vec->types[idx] = obj->type;
+    RNFUNC_END;
 }
 
-void
+RnResult
 RnBytevector(RnCtx* ctx, Value* out, size_t len){
+    RNFUNC_BEGIN;
     ValueContainer v;
     ObjBytevector* bv;
 
@@ -1006,10 +1029,12 @@ RnBytevector(RnCtx* ctx, Value* out, size_t len){
 
     v.as_bytevector = bv;
     RnValueRef(ctx, out, v, VT_BYTEVECTOR);
+    RNFUNC_END;
 }
 
-void
+RnResult
 RnString(RnCtx* ctx, Value* out, const char* name, size_t len){
+    RNFUNC_BEGIN;
     char* buf;
     ObjString* str;
     ValueContainer v;
@@ -1028,15 +1053,18 @@ RnString(RnCtx* ctx, Value* out, const char* name, size_t len){
     str->len = len;
     v.as_string = str;
     RnValueRef(ctx, out, v, VT_STRING);
+    RNFUNC_END;
 }
 
-void
+RnResult
 RnUninternedSymbol(RnCtx* ctx, Value* out, Value* name){
+    RNFUNC_BEGIN;
     Value id;
     RnValueLink(ctx, &id);
-    RnInt64(ctx, &id, 2 /* Symbol */);
-    RnRib(ctx, out, name, name, &id);
+    RNFUNC_CALL(ctx, RnInt64(ctx, &id, 2 /* Symbol */));
+    RNFUNC_CALL(ctx, RnRib(ctx, out, name, name, &id));
     RnValueUnlink(ctx, &id);
+    RNFUNC_END;
 }
 
 /* Hashtable */
@@ -1328,8 +1356,9 @@ ht_hash(ObjHashtable* ht, Value* key){
 }
 
 
-void
+RnResult
 RnHashtableRef(RnCtx* ctx, Value* out, Value* ht, Value* key, Value* def){
+    RNFUNC_BEGIN;
     size_t hashk;
     size_t loc;
     ObjHashtable* hto;
@@ -1348,10 +1377,12 @@ RnHashtableRef(RnCtx* ctx, Value* out, Value* ht, Value* key, Value* def){
         RnValueRef(ctx, out, hto->values[loc], hto->valuetypes[loc]);
     }
     RnLeave(ctx, &frame);
+    RNFUNC_END;
 }
 
-void
+RnResult
 RnHashtableSet(RnCtx* ctx, Value* ht, Value* key, Value* obj){
+    RNFUNC_BEGIN;
     size_t hashk;
     size_t loc;
     Value frame;
@@ -1374,9 +1405,9 @@ RnHashtableSet(RnCtx* ctx, Value* ht, Value* key, Value* obj){
 
     if(! hto->table[hashk].as_rib){
         loc = ht_add_value(ctx, hto, key, obj);
-        RnInt64(ctx, &me, loc);
-        RnInt64(ctx, &zero, 0);
-        RnRib(ctx, &r, &me, &zero, &zero);
+        RNFUNC_CALL(ctx, RnInt64(ctx, &me, loc));
+        RNFUNC_CALL(ctx, RnInt64(ctx, &zero, 0));
+        RNFUNC_CALL(ctx, RnRib(ctx, &r, &me, &zero, &zero));
         hto->table[hashk] = r.value;
         RnRef(ctx, hto->table[hashk], VT_RIB);
     }else{
@@ -1390,19 +1421,21 @@ RnHashtableSet(RnCtx* ctx, Value* ht, Value* key, Value* obj){
         }else{
             /* Hash collision, add new loc and chain it as rib */
             loc = ht_add_value(ctx, hto, key, obj);
-            RnInt64(ctx, &me, loc);
-            RnInt64(ctx, &zero, 0);
+            RNFUNC_CALL(ctx, RnInt64(ctx, &me, loc));
+            RNFUNC_CALL(ctx, RnInt64(ctx, &zero, 0));
             RnValueRef(ctx, &next, hto->table[hashk], VT_RIB);
-            RnRib(ctx, &r, &me, &next, &zero);
+            RNFUNC_CALL(ctx, RnRib(ctx, &r, &me, &next, &zero));
             hto->table[hashk] = r.value;
             RnRef(ctx, hto->table[hashk], VT_RIB);
         }
     }
     RnLeave(ctx, &frame);
+    RNFUNC_END;
 }
 
-void
+RnResult
 RnHashtable(RnCtx* ctx, Value* out, HashtableClass htc){
+    RNFUNC_BEGIN;
     ValueContainer ptrv;
     ObjHashtable* ht;
     size_t i;
@@ -1475,6 +1508,7 @@ RnHashtable(RnCtx* ctx, Value* out, HashtableClass htc){
 
     ptrv.as_hashtable = ht;
     RnValueRef(ctx, out, ptrv, VT_HASHTABLE);
+    RNFUNC_END;
 }
 
 /* Context */
@@ -2194,8 +2228,9 @@ vmstep(RnCtx* ctx, struct vmstate_s* state){
     return r;
 }
 
-static void
+static RnResult
 RnVmRun(RnCtx* ctx, Value* out, Value* code){
+    RNFUNC_BEGIN;
     int cont;
     Value frame;
     Value seven;
@@ -2210,19 +2245,19 @@ RnVmRun(RnCtx* ctx, Value* out, Value* code){
     RnValueLink(ctx, &state.zero);
     RnValueLink(ctx, &seven);
     RnValueLink(ctx, &zero);
-    RnInt64(ctx, &seven, 7);
-    RnInt64(ctx, &zero, 0);
-    RnInt64(ctx, &state.zero, 0);
+    RNFUNC_CALL(ctx, RnInt64(ctx, &seven, 7));
+    RNFUNC_CALL(ctx, RnInt64(ctx, &zero, 0));
+    RNFUNC_CALL(ctx, RnInt64(ctx, &state.zero, 0));
 
-    RnRibRef(ctx, &state.pc, code, 0);
-    RnRibRef(ctx, &state.pc, &state.pc, 2);
+    RNFUNC_CALL(ctx, RnRibRef(ctx, &state.pc, code, 0));
+    RNFUNC_CALL(ctx, RnRibRef(ctx, &state.pc, &state.pc, 2));
 
     /* Something default */
-    RnInt64(ctx, &state.result, -1234);
+    RNFUNC_CALL(ctx, RnInt64(ctx, &state.result, -1234));
     /* Initial instruction #<7 0 0> */
-    RnRib(ctx, &state.stack, &seven, &zero, &zero);
+    RNFUNC_CALL(ctx, RnRib(ctx, &state.stack, &seven, &zero, &zero));
     /* Initial stack frame */
-    RnRib(ctx, &state.stack, &zero, &zero, &state.stack);
+    RNFUNC_CALL(ctx, RnRib(ctx, &state.stack, &zero, &zero, &state.stack));
     state.vals = -1;
 
     while(1){
@@ -2236,6 +2271,7 @@ RnVmRun(RnCtx* ctx, Value* out, Value* code){
 
     RnValueRef(ctx, out, state.result.value, state.result.type);
     RnLeave(ctx, &frame);
+    RNFUNC_END;
 }
 
 static size_t

@@ -1,17 +1,19 @@
-typedef void (*ExArg_0_1)(RnCtx* ctx, Value* out);
-typedef void (*ExArg_1_1)(RnCtx* ctx, Value* out, Value* x);
-typedef void (*ExArg_1_2)(RnCtx* ctx, Value* out, Value* out2, Value* x);
-typedef void (*ExArg_2_1)(RnCtx* ctx, Value* out, Value* x, Value* y);
-typedef void (*ExArg_2_2)(RnCtx* ctx, Value* out, Value* out2,
+typedef RnResult (*ExArg_0_1)(RnCtx* ctx, Value* out);
+typedef RnResult (*ExArg_1_1)(RnCtx* ctx, Value* out, Value* x);
+typedef RnResult (*ExArg_1_2)(RnCtx* ctx, Value* out, Value* out2, Value* x);
+typedef RnResult (*ExArg_2_1)(RnCtx* ctx, Value* out, Value* x, Value* y);
+typedef RnResult (*ExArg_2_2)(RnCtx* ctx, Value* out, Value* out2,
                           Value* x, Value* y);
-typedef void (*ExArg_3_1)(RnCtx* ctx, Value* out, Value* x, Value* y, Value* z);
-typedef void (*ExArg_4_1)(RnCtx* ctx, Value* out, Value* x, Value* y, Value* Z,
-                          Value* w);
-typedef void (*ExArg_5_1)(RnCtx* ctx, Value* out, Value* x, Value* y, Value* z,
-                          Value* w, Value* u);
+typedef RnResult (*ExArg_3_1)(RnCtx* ctx, Value* out, Value* x, Value* y, 
+                              Value* z);
+typedef RnResult (*ExArg_4_1)(RnCtx* ctx, Value* out, Value* x, Value* y, 
+                              Value* Z, Value* w);
+typedef RnResult (*ExArg_5_1)(RnCtx* ctx, Value* out, Value* x, Value* y, 
+                              Value* z, Value* w, Value* u);
 
-static void
+static RnResult
 ExCall_0_1(ExArg_0_1 func, RnCtx* ctx, int argc, Value* stack){
+    RNFUNC_BEGIN;
     Value out[1];
     if(argc != 0){
         fprintf(stderr, "Invalid argument count %d (expected %d)\n",
@@ -19,13 +21,15 @@ ExCall_0_1(ExArg_0_1 func, RnCtx* ctx, int argc, Value* stack){
         abort();
     }
     RnValueLink(ctx, &out[0]);
-    func(ctx, &out[0]);
+    RNFUNC_CALL(ctx, func(ctx, &out[0]));
     RnCons(ctx, stack, &out[0], stack);
     RnValueUnlink(ctx, &out[0]);
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExCall_1_1(ExArg_1_1 func, RnCtx* ctx, int argc, Value* stack){
+    RNFUNC_BEGIN;
     Value arg[1];
     Value out[1];
     if(argc != 1){
@@ -37,14 +41,16 @@ ExCall_1_1(ExArg_1_1 func, RnCtx* ctx, int argc, Value* stack){
     RnValueLink(ctx, &out[0]);
     RnRibRef(ctx, &arg[0], stack, 0);
     RnRibRef(ctx, stack, stack, 1);
-    func(ctx, &out[0], &arg[0]);
+    RNFUNC_CALL(ctx, func(ctx, &out[0], &arg[0]));
     RnCons(ctx, stack, &out[0], stack);
     RnValueUnlink(ctx, &out[0]);
     RnValueUnlink(ctx, &arg[0]);
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExCall_1_2(ExArg_1_2 func, RnCtx* ctx, int argc, Value* stack){
+    RNFUNC_BEGIN;
     Value tmp;
     Value six;
     Value zero;
@@ -68,7 +74,7 @@ ExCall_1_2(ExArg_1_2 func, RnCtx* ctx, int argc, Value* stack){
     RnZone0(ctx, &nil, ZZ_NIL);
     RnRibRef(ctx, &arg[0], stack, 0);
     RnRibRef(ctx, stack, stack, 1);
-    func(ctx, &out[0], &out[1], &arg[0]);
+    RNFUNC_CALL(ctx,func(ctx, &out[0], &out[1], &arg[0]));
     RnCons(ctx, &tmp, &out[1], &nil);
     RnCons(ctx, &tmp, &out[0], &tmp);
     RnRib(ctx, &tmp, &tmp, &zero, &six);
@@ -80,10 +86,12 @@ ExCall_1_2(ExArg_1_2 func, RnCtx* ctx, int argc, Value* stack){
     RnValueUnlink(ctx, &out[0]);
     RnValueUnlink(ctx, &out[1]);
     RnValueUnlink(ctx, &arg[0]);
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExCall_2_1(ExArg_2_1 func, RnCtx* ctx, int argc, Value* stack){
+    RNFUNC_BEGIN;
     Value arg[2];
     Value out[1];
     if(argc != 2){
@@ -98,15 +106,17 @@ ExCall_2_1(ExArg_2_1 func, RnCtx* ctx, int argc, Value* stack){
     RnRibRef(ctx, stack, stack, 1);
     RnRibRef(ctx, &arg[0], stack, 0);
     RnRibRef(ctx, stack, stack, 1);
-    func(ctx, &out[0], &arg[0], &arg[1]);
+    RNFUNC_CALL(ctx, func(ctx, &out[0], &arg[0], &arg[1]));
     RnCons(ctx, stack, &out[0], stack);
     RnValueUnlink(ctx, &out[0]);
     RnValueUnlink(ctx, &arg[0]);
     RnValueUnlink(ctx, &arg[1]);
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExCall_2_2(ExArg_2_2 func, RnCtx* ctx, int argc, Value* stack){
+    RNFUNC_BEGIN;
     Value tmp;
     Value six;
     Value zero;
@@ -133,7 +143,7 @@ ExCall_2_2(ExArg_2_2 func, RnCtx* ctx, int argc, Value* stack){
     RnRibRef(ctx, stack, stack, 1);
     RnRibRef(ctx, &arg[0], stack, 0);
     RnRibRef(ctx, stack, stack, 1);
-    func(ctx, &out[0], &out[1], &arg[0], &arg[1]);
+    RNFUNC_CALL(ctx,func(ctx, &out[0], &out[1], &arg[0], &arg[1]));
     RnCons(ctx, &tmp, &out[1], &nil);
     RnCons(ctx, &tmp, &out[0], &tmp);
     RnRib(ctx, &tmp, &tmp, &zero, &six);
@@ -146,10 +156,12 @@ ExCall_2_2(ExArg_2_2 func, RnCtx* ctx, int argc, Value* stack){
     RnValueUnlink(ctx, &out[1]);
     RnValueUnlink(ctx, &arg[0]);
     RnValueUnlink(ctx, &arg[1]);
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExCall_3_1(ExArg_3_1 func, RnCtx* ctx, int argc, Value* stack){
+    RNFUNC_BEGIN;
     Value arg[3];
     Value out[1];
     if(argc != 3){
@@ -167,16 +179,18 @@ ExCall_3_1(ExArg_3_1 func, RnCtx* ctx, int argc, Value* stack){
     RnRibRef(ctx, stack, stack, 1);
     RnRibRef(ctx, &arg[0], stack, 0);
     RnRibRef(ctx, stack, stack, 1);
-    func(ctx, &out[0], &arg[0], &arg[1], &arg[2]);
+    RNFUNC_CALL(ctx,func(ctx, &out[0], &arg[0], &arg[1], &arg[2]));
     RnCons(ctx, stack, &out[0], stack);
     RnValueUnlink(ctx, &out[0]);
     RnValueUnlink(ctx, &arg[0]);
     RnValueUnlink(ctx, &arg[1]);
     RnValueUnlink(ctx, &arg[2]);
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExCall_4_1(ExArg_4_1 func, RnCtx* ctx, int argc, Value* stack){
+    RNFUNC_BEGIN;
     Value arg[4];
     Value out[1];
     if(argc != 4){
@@ -197,17 +211,19 @@ ExCall_4_1(ExArg_4_1 func, RnCtx* ctx, int argc, Value* stack){
     RnRibRef(ctx, stack, stack, 1);
     RnRibRef(ctx, &arg[0], stack, 0);
     RnRibRef(ctx, stack, stack, 1);
-    func(ctx, &out[0], &arg[0], &arg[1], &arg[2], &arg[3]);
+    RNFUNC_CALL(ctx, func(ctx, &out[0], &arg[0], &arg[1], &arg[2], &arg[3]));
     RnCons(ctx, stack, &out[0], stack);
     RnValueUnlink(ctx, &out[0]);
     RnValueUnlink(ctx, &arg[0]);
     RnValueUnlink(ctx, &arg[1]);
     RnValueUnlink(ctx, &arg[2]);
     RnValueUnlink(ctx, &arg[3]);
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExCall_5_1(ExArg_5_1 func, RnCtx* ctx, int argc, Value* stack){
+    RNFUNC_BEGIN;
     Value arg[5];
     Value out[1];
     if(argc != 5){
@@ -231,7 +247,8 @@ ExCall_5_1(ExArg_5_1 func, RnCtx* ctx, int argc, Value* stack){
     RnRibRef(ctx, stack, stack, 1);
     RnRibRef(ctx, &arg[0], stack, 0);
     RnRibRef(ctx, stack, stack, 1);
-    func(ctx, &out[0], &arg[0], &arg[1], &arg[2], &arg[3], &arg[4]);
+    RNFUNC_CALL(ctx, func(ctx, &out[0], &arg[0], &arg[1], &arg[2], &arg[3], 
+                          &arg[4]));
     RnCons(ctx, stack, &out[0], stack);
     RnValueUnlink(ctx, &out[0]);
     RnValueUnlink(ctx, &arg[0]);
@@ -239,6 +256,7 @@ ExCall_5_1(ExArg_5_1 func, RnCtx* ctx, int argc, Value* stack){
     RnValueUnlink(ctx, &arg[2]);
     RnValueUnlink(ctx, &arg[3]);
     RnValueUnlink(ctx, &arg[4]);
+    RNFUNC_END;
 }
 
 
@@ -263,21 +281,25 @@ ExCall_5_1(ExArg_5_1 func, RnCtx* ctx, int argc, Value* stack){
 #define VMBRIDGE_5_1(call) VMBRIDGEGEN(_5_1, call)
 
 #define VMBRIDGEGEN(f,call) \
-    static void \
+    static RnResult \
     VMBRIDGENAME ## f(call)(RnCtx* ctx, int argc, Value* stack){ \
-        ExCall ## f(call, ctx, argc, stack); \
+        RNFUNC_BEGIN; \
+        RNFUNC_CALL(ctx, ExCall ## f(call, ctx, argc, stack)); \
+        RNFUNC_END; \
     } 
 
 #define GEN_FILD(nam, func, proto) {nam, sizeof(nam) - 1, VMBRIDGENAME ## proto(func)},
 #define GEN_BRIDGE(_, func, proto) VMBRIDGE ## proto(func)
 
-static void
+static RnResult
 to_bool(RnCtx* ctx, Value* out, int x){
+    RNFUNC_BEGIN;
     if(x){
-        RnZone0(ctx, out, ZZ_TRUE);
+        RNFUNC_CALL(ctx, RnZone0(ctx, out, ZZ_TRUE));
     }else{
-        RnZone0(ctx, out, ZZ_FALSE);
+        RNFUNC_CALL(ctx, RnZone0(ctx, out, ZZ_FALSE));
     }
+    RNFUNC_END;
 }
 /* (rib x y z) => rib */
 /* (field0 r) => x */
@@ -297,42 +319,56 @@ to_bool(RnCtx* ctx, Value* out, int x){
     x("field2-set!", ExField2SetEx, _2_1) 
 
 
-static void
+static RnResult
 ExRib(RnCtx* ctx, Value* out, Value* x, Value* y, Value* z){
-    RnRib(ctx, out, x, y, z);
+    RNFUNC_BEGIN;
+    RNFUNC_CALL(ctx, RnRib(ctx, out, x, y, z));
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExField0(RnCtx* ctx, Value* out, Value* r){
-    RnRibRef(ctx, out, r, 0);
+    RNFUNC_BEGIN;
+    RNFUNC_CALL(ctx, RnRibRef(ctx, out, r, 0));
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExField1(RnCtx* ctx, Value* out, Value* r){
-    RnRibRef(ctx, out, r, 1);
+    RNFUNC_BEGIN;
+    RNFUNC_CALL(ctx, RnRibRef(ctx, out, r, 1));
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExField2(RnCtx* ctx, Value* out, Value* r){
-    RnRibRef(ctx, out, r, 2);
+    RNFUNC_BEGIN;
+    RNFUNC_CALL(ctx, RnRibRef(ctx, out, r, 2));
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExField0SetEx(RnCtx* ctx, Value* out, Value* r, Value* obj){
-    RnRibSet(ctx, r, obj, 0);
+    RNFUNC_BEGIN;
+    RNFUNC_CALL(ctx, RnRibSet(ctx, r, obj, 0));
     RnValueRef(ctx, out, obj->value, obj->type);
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExField1SetEx(RnCtx* ctx, Value* out, Value* r, Value* obj){
-    RnRibSet(ctx, r, obj, 1);
+    RNFUNC_BEGIN;
+    RNFUNC_CALL(ctx, RnRibSet(ctx, r, obj, 1));
     RnValueRef(ctx, out, obj->value, obj->type);
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExField2SetEx(RnCtx* ctx, Value* out, Value* r, Value* obj){
-    RnRibSet(ctx, r, obj, 2);
+    RNFUNC_BEGIN;
+    RNFUNC_CALL(ctx, RnRibSet(ctx, r, obj, 2));
     RnValueRef(ctx, out, obj->value, obj->type);
+    RNFUNC_END;
 }
 
 /* (id x) => x */
@@ -364,117 +400,143 @@ ExField2SetEx(RnCtx* ctx, Value* out, Value* r, Value* obj){
     x("close", ExClose, _N) \
     x("$$runvm", ExRunVm, _1_1)
 
-static void
+static RnResult
 ExId(RnCtx* ctx, int argc, Value* stack){
+    RNFUNC_BEGIN;
     (void) stack;
     (void) argc;
     (void) ctx;
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExArg1(RnCtx* ctx, int argc, Value* stack){
+    RNFUNC_BEGIN;
     (void) argc;
-    RnRibRef(ctx, stack, stack, 1);
+    RNFUNC_CALL(ctx, RnRibRef(ctx, stack, stack, 1));
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExArg2(RnCtx* ctx, int argc, Value* stack){
+    RNFUNC_BEGIN;
     Value tmp;
     (void) argc;
     RnValueLink(ctx, &tmp);
-    RnRibRef(ctx, &tmp, stack, 0);
-    RnRibRef(ctx, stack, stack, 1);
-    RnRibRef(ctx, stack, stack, 1);
-    RnCons(ctx, stack, &tmp, stack);
+    RNFUNC_CALL(ctx, RnRibRef(ctx, &tmp, stack, 0));
+    RNFUNC_CALL(ctx, RnRibRef(ctx, stack, stack, 1));
+    RNFUNC_CALL(ctx, RnRibRef(ctx, stack, stack, 1));
+    RNFUNC_CALL(ctx, RnCons(ctx, stack, &tmp, stack));
     RnValueUnlink(ctx, &tmp);
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExVminject(RnCtx* ctx, int argc, Value* stack){
+    RNFUNC_BEGIN;
     (void) ctx;
     (void) stack;
     if(argc != 1){
         abort();
     }
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExVmfetchcode(RnCtx* ctx, int argc, Value* stack){
+    RNFUNC_BEGIN;
     (void) ctx;
     (void) stack;
     if(argc != 1){
         abort();
     }
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExVmfetch(RnCtx* ctx, int argc, Value* stack){
+    RNFUNC_BEGIN;
     (void) ctx;
     (void) stack;
     if(argc != 1){
         abort();
     }
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExCommandLine(RnCtx* ctx, Value* out, Value* bogus){
+    RNFUNC_BEGIN;
     (void) bogus;
     RnValueRef(ctx, out, ctx->args.value, ctx->args.type);
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExLookupCachedLibinfo(RnCtx* ctx, Value* out, Value* libsym){
+    RNFUNC_BEGIN;
     Value fail;
     RnValueLink(ctx, &fail);
-    to_bool(ctx, &fail, 0);
-    RnHashtableRef(ctx, out, &ctx->ht_libinfo, libsym, &fail);
+    RNFUNC_CALL(ctx, to_bool(ctx, &fail, 0));
+    RNFUNC_CALL(ctx, RnHashtableRef(ctx, out, &ctx->ht_libinfo, libsym, &fail));
     RnValueUnlink(ctx, &fail);
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExLookupCachedCode(RnCtx* ctx, Value* out, Value* libsym){
+    RNFUNC_BEGIN;
     Value fail;
     RnValueLink(ctx, &fail);
-    to_bool(ctx, &fail, 0);
-    RnHashtableRef(ctx, out, &ctx->ht_libcode, libsym, &fail);
+    RNFUNC_CALL(ctx, to_bool(ctx, &fail, 0));
+    RNFUNC_CALL(ctx, RnHashtableRef(ctx, out, &ctx->ht_libcode, libsym, &fail));
     RnValueUnlink(ctx, &fail);
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExLookupCachedMacro(RnCtx* ctx, Value* out, Value* sym){
+    RNFUNC_BEGIN;
     Value fail;
     RnValueLink(ctx, &fail);
-    to_bool(ctx, &fail, 0);
-    RnHashtableRef(ctx, out, &ctx->ht_macro, sym, &fail);
+    RNFUNC_CALL(ctx, to_bool(ctx, &fail, 0));
+    RNFUNC_CALL(ctx, RnHashtableRef(ctx, out, &ctx->ht_macro, sym, &fail));
     RnValueUnlink(ctx, &fail);
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExMacroRuntimeMode(RnCtx* ctx, Value* out, Value* bogus){
+    RNFUNC_BEGIN;
     (void) bogus;
-    RnInt64(ctx, out, 1);
+    RNFUNC_CALL(ctx, RnInt64(ctx, out, 1));
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExClose(RnCtx* ctx, int argc, Value* stack){
+    RNFUNC_BEGIN;
     Value cur;
     Value one;
     (void) argc;
     RnValueLink(ctx, &cur);
     RnValueLink(ctx, &one);
-    RnInt64(ctx, &one, 1);
-    RnRibRef(ctx, &cur, stack, 0);
-    RnRibRef(ctx, stack, stack, 1);
-    RnRibRef(ctx, &cur, &cur, 0);
-    RnRib(ctx, &cur, &cur, stack, &one);
-    RnCons(ctx, stack, &cur, stack);
+    RNFUNC_CALL(ctx, RnInt64(ctx, &one, 1));
+    RNFUNC_CALL(ctx, RnRibRef(ctx, &cur, stack, 0));
+    RNFUNC_CALL(ctx, RnRibRef(ctx, stack, stack, 1));
+    RNFUNC_CALL(ctx, RnRibRef(ctx, &cur, &cur, 0));
+    RNFUNC_CALL(ctx, RnRib(ctx, &cur, &cur, stack, &one));
+    RNFUNC_CALL(ctx, RnCons(ctx, stack, &cur, stack));
     RnValueUnlink(ctx, &one);
     RnValueUnlink(ctx, &cur);
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExRunVm(RnCtx* ctx, Value* out, Value* code){
-    RnVmRun(ctx, out, code);
+    RNFUNC_BEGIN;
+    RNFUNC_CALL(ctx, RnVmRun(ctx, out, code));
+    RNFUNC_END;
 }
 
 
@@ -530,74 +592,90 @@ ExRunVm(RnCtx* ctx, Value* out, Value* code){
     x("vector?", ExVectorP, _1_1) \
     x("simple-struct?", ExSimpleStructP, _1_1)
 
-static void
+static RnResult
 ExStringP(RnCtx* ctx, Value* out, Value* x){
-    to_bool(ctx, out, x->type == VT_STRING);
+    RNFUNC_BEGIN;
+    RNFUNC_CALL(ctx, to_bool(ctx, out, x->type == VT_STRING));
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExBytevectorP(RnCtx* ctx, Value* out, Value* x){
-    to_bool(ctx, out, x->type == VT_BYTEVECTOR);
+    RNFUNC_BEGIN;
+    RNFUNC_CALL(ctx, to_bool(ctx, out, x->type == VT_BYTEVECTOR));
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExPairP(RnCtx* ctx, Value* out, Value* x){
-    to_bool(ctx, out, x->type == VT_RIB &&
-            x->value.as_rib->type[2] == VT_INT64 &&
-            x->value.as_rib->field[2].as_int64 == 0);
+    RNFUNC_BEGIN;
+    RNFUNC_CALL(ctx,
+                to_bool(ctx, out, x->type == VT_RIB &&
+                        x->value.as_rib->type[2] == VT_INT64 &&
+                        x->value.as_rib->field[2].as_int64 == 0));
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExSymbolP(RnCtx* ctx, Value* out, Value* x){
-    to_bool(ctx, out, x->type == VT_RIB &&
-            x->value.as_rib->type[2] == VT_INT64 &&
-            x->value.as_rib->field[2].as_int64 == 2);
+    RNFUNC_BEGIN;
+    RNFUNC_CALL(ctx,
+                to_bool(ctx, out, x->type == VT_RIB &&
+                        x->value.as_rib->type[2] == VT_INT64 &&
+                        x->value.as_rib->field[2].as_int64 == 2));
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExVectorP(RnCtx* ctx, Value* out, Value* x){
-    to_bool(ctx, out, x->type == VT_VECTOR);
+    RNFUNC_BEGIN;
+    RNFUNC_CALL(ctx, to_bool(ctx, out, x->type == VT_VECTOR));
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExSimpleStructP(RnCtx* ctx, Value* out, Value* x){
-    to_bool(ctx, out, x->type == VT_SIMPLE_STRUCT);
+    RNFUNC_BEGIN;
+    RNFUNC_CALL(ctx, to_bool(ctx, out, x->type == VT_SIMPLE_STRUCT));
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExCharP(RnCtx* ctx, Value* out, Value* x){
-    to_bool(ctx, out, x->type == VT_CHAR);
+    RNFUNC_BEGIN;
+    RNFUNC_CALL(ctx, to_bool(ctx, out, x->type == VT_CHAR));
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExFixnumP(RnCtx* ctx, Value* out, Value* x){
-    to_bool(ctx, out, x->type == VT_INT64);
+    RNFUNC_BEGIN;
+    RNFUNC_CALL(ctx, to_bool(ctx, out, x->type == VT_INT64));
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExFlonumP(RnCtx* ctx, Value* out, Value* x){
-    to_bool(ctx, out, x->type == VT_DOUBLE);
+    RNFUNC_BEGIN;
+    RNFUNC_CALL(ctx, to_bool(ctx, out, x->type == VT_DOUBLE));
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExRibP(RnCtx* ctx, Value* out, Value* x){
-    to_bool(ctx, out, x->type == VT_RIB);
+    RNFUNC_BEGIN;
+    RNFUNC_CALL(ctx, to_bool(ctx, out, x->type == VT_RIB));
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExEqvP(RnCtx* ctx, Value* out, Value* x, Value* y){
+    RNFUNC_BEGIN;
     int r;
-    /*
-    fprintf(stderr, "EQVP:\nA: ");
-    emergency_print(ctx, x);
-    fprintf(stderr, "\nB: ");
-    emergency_print(ctx, y);
-    fprintf(stderr, "\n");
-    */
 
     if(x->type != y->type){
-        to_bool(ctx, out, 0);
-        return;
+        RNFUNC_CALL(ctx, to_bool(ctx, out, 0));
+        goto finish;
     }
 
     switch(x->type){
@@ -633,30 +711,35 @@ ExEqvP(RnCtx* ctx, Value* out, Value* x, Value* y){
             r = x == y;
             break;
     }
-    to_bool(ctx, out, r);
+    RNFUNC_CALL(ctx, to_bool(ctx, out, r));
+finish:
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExProcedureP(RnCtx* ctx, Value* out, Value* x){
+    RNFUNC_BEGIN;
     int r;
     Value tmp;
     RnValueLink(ctx, &tmp);
     if(x->type != VT_RIB){
         r = 0;
     }else{
-        RnRibRef(ctx, &tmp, x, 2);
+        RNFUNC_CALL(ctx, RnRibRef(ctx, &tmp, x, 2));
         if(tmp.type == VT_INT64 && tmp.value.as_int64 == 1){
             r = 1;
         }else{
             r = 0;
         }
-        to_bool(ctx, out, r);
+        RNFUNC_CALL(ctx, to_bool(ctx, out, r));
         RnValueUnlink(ctx, &tmp);
     }
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExValues(RnCtx* ctx, int argc, Value* stack){
+    RNFUNC_BEGIN;
     int i;
     Value zero;
     Value six;
@@ -669,84 +752,96 @@ ExValues(RnCtx* ctx, int argc, Value* stack){
         RnValueLink(ctx, &tmp);
         RnValueLink(ctx, &zero);
         RnValueLink(ctx, &six);
-        RnInt64(ctx, &zero, 0);
-        RnInt64(ctx, &six, 6);
-        RnZone0(ctx, &tmp, ZZ_NIL);
+        RNFUNC_CALL(ctx, RnInt64(ctx, &zero, 0));
+        RNFUNC_CALL(ctx, RnInt64(ctx, &six, 6));
+        RNFUNC_CALL(ctx, RnZone0(ctx, &tmp, ZZ_NIL));
         for(i=0;i!=argc;i++){
-            RnRibRef(ctx, &tmp2, stack, 0);
-            RnCons(ctx, &tmp, &tmp2, &tmp);
-            RnRibRef(ctx, stack, stack, 1);
+            RNFUNC_CALL(ctx, RnRibRef(ctx, &tmp2, stack, 0));
+            RNFUNC_CALL(ctx, RnCons(ctx, &tmp, &tmp2, &tmp));
+            RNFUNC_CALL(ctx, RnRibRef(ctx, stack, stack, 1));
         }
-        RnRib(ctx, &tmp, &tmp, &zero, &six);
-        RnCons(ctx, stack, &tmp, stack);
+        RNFUNC_CALL(ctx, RnRib(ctx, &tmp, &tmp, &zero, &six));
+        RNFUNC_CALL(ctx, RnCons(ctx, stack, &tmp, stack));
         RnValueUnlink(ctx, &six);
         RnValueUnlink(ctx, &zero);
         RnValueUnlink(ctx, &tmp);
         RnValueUnlink(ctx, &tmp2);
     }
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExListToValues(RnCtx* ctx, Value* out, Value* x){
+    RNFUNC_BEGIN;
     Value zero;
     Value six;
     RnValueLink(ctx, &zero);
     RnValueLink(ctx, &six);
-    RnInt64(ctx, &zero, 0);
-    RnInt64(ctx, &six, 6);
-    RnRib(ctx, out, x, &zero, &six);
+    RNFUNC_CALL(ctx, RnInt64(ctx, &zero, 0));
+    RNFUNC_CALL(ctx, RnInt64(ctx, &six, 6));
+    RNFUNC_CALL(ctx, RnRib(ctx, out, x, &zero, &six));
     RnValueUnlink(ctx, &six);
     RnValueUnlink(ctx, &zero);
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExStringToSymbol(RnCtx* ctx, Value* out, Value* str){
+    RNFUNC_BEGIN;
     Value sym;
     if(str->type != VT_STRING){
         abort();
     }
     RnValueLink(ctx, &sym);
-    RnUninternedSymbol(ctx, &sym, str);
-    RnHashtableRef(ctx, out, &ctx->ht_global, str, &sym);
+    RNFUNC_CALL(ctx, RnUninternedSymbol(ctx, &sym, str));
+    RNFUNC_CALL(ctx, RnHashtableRef(ctx, out, &ctx->ht_global, str, &sym));
     if(out->value.as_rib == sym.value.as_rib){
-        RnHashtableSet(ctx, &ctx->ht_global, str, &sym);
+        RNFUNC_CALL(ctx, RnHashtableSet(ctx, &ctx->ht_global, str, &sym));
     }
     RnValueUnlink(ctx, &sym);
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExSymbolToString(RnCtx* ctx, Value* out, Value* sym){
+    RNFUNC_BEGIN;
     Value tmp;
     RnValueLink(ctx, &tmp);
-    RnRibRef(ctx, &tmp, sym, 2);
+    RNFUNC_CALL(ctx, RnRibRef(ctx, &tmp, sym, 2));
     if(tmp.type != VT_INT64 || tmp.value.as_int64 != 2){
         abort();
     }
-    RnRibRef(ctx, out, sym, 1);
+    RNFUNC_CALL(ctx, RnRibRef(ctx, out, sym, 1));
     RnValueUnlink(ctx, &tmp);
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExCharToInteger(RnCtx* ctx, Value* out, Value* c){
+    RNFUNC_BEGIN;
     if(c->type != VT_CHAR){
         abort();
     }
-    RnInt64(ctx, out, c->value.as_char);
+    RNFUNC_CALL(ctx, RnInt64(ctx, out, c->value.as_char));
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExIntegerToChar(RnCtx* ctx, Value* out, Value* i){
+    RNFUNC_BEGIN;
     if(i->type != VT_INT64){
         abort();
     }
     if(i->value.as_int64 < 0){
         abort();
     }
-    RnChar(ctx, out, (int)i->value.as_int64);
+    RNFUNC_CALL(ctx, RnChar(ctx, out, (int)i->value.as_int64));
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExUtf8ToString_3_1(RnCtx* ctx, Value* out, Value* bv, Value* start, Value* end){
+    RNFUNC_BEGIN;
     size_t istart;
     size_t iend;
     size_t ilen;
@@ -766,11 +861,15 @@ ExUtf8ToString_3_1(RnCtx* ctx, Value* out, Value* bv, Value* start, Value* end){
     }
     ilen = iend - istart;
 
-    RnString(ctx, out, (char*)bv->value.as_bytevector->buf + istart, ilen);
+    RNFUNC_CALL(ctx, RnString(ctx, out, 
+                              (char*)bv->value.as_bytevector->buf + istart, 
+                              ilen));
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExUtf8ToString_2_1(RnCtx* ctx, Value* out, Value* bv, Value* start){
+    RNFUNC_BEGIN;
     size_t istart;
     size_t iend;
     size_t ilen;
@@ -787,33 +886,41 @@ ExUtf8ToString_2_1(RnCtx* ctx, Value* out, Value* bv, Value* start){
     }
     ilen = iend - istart;
 
-    RnString(ctx, out, (char*)bv->value.as_bytevector->buf + istart, ilen);
+    RNFUNC_CALL(ctx, RnString(ctx, out, 
+                              (char*)bv->value.as_bytevector->buf + istart, 
+                              ilen));
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExUtf8ToString_1_1(RnCtx* ctx, Value* out, Value* bv){
+    RNFUNC_BEGIN;
     if(bv->type != VT_BYTEVECTOR){
         abort();
     }
-    RnString(ctx, out, (char*)bv->value.as_bytevector->buf, bv->value.as_bytevector->len);
+    RNFUNC_CALL(ctx, RnString(ctx, out, 
+                              (char*)bv->value.as_bytevector->buf, 
+                              bv->value.as_bytevector->len));
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExUtf8ToString(RnCtx* ctx, int argc, Value* stack){
+    RNFUNC_BEGIN;
     switch(argc){
         case 1:
-            ExCall_1_1(ExUtf8ToString_1_1, ctx, argc, stack);
-            return;
+            RNFUNC_CALL(ctx, ExCall_1_1(ExUtf8ToString_1_1, ctx, argc, stack));
+            break;
         case 2:
-            ExCall_2_1(ExUtf8ToString_2_1, ctx, argc, stack);
-            return;
+            RNFUNC_CALL(ctx, ExCall_2_1(ExUtf8ToString_2_1, ctx, argc, stack));
+            break;
         case 3:
-            ExCall_3_1(ExUtf8ToString_3_1, ctx, argc, stack);
-            return;
+            RNFUNC_CALL(ctx, ExCall_3_1(ExUtf8ToString_3_1, ctx, argc, stack));
+            break;
         default:
             abort();
-            return;
     }
+    RNFUNC_END;
 }
 
 static int /* -1 for broken */
@@ -957,9 +1064,10 @@ utf8_encode(char* start, const char* stop, int c){
     }
 }
 
-static void
+static RnResult
 vector_to_string(RnCtx* ctx, Value* out, ObjVector* vec, 
                  size_t start, size_t end){
+    RNFUNC_BEGIN;
     int r,c;
     size_t siz;
     size_t i;
@@ -1008,11 +1116,13 @@ vector_to_string(RnCtx* ctx, Value* out, ObjVector* vec,
     v.as_string = str;
 
     RnValueRef(ctx, out, v, VT_STRING);
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExVectorToString_3_1(RnCtx* ctx, Value* out, Value* vec, Value* start,
                      Value* end){
+    RNFUNC_BEGIN;
     if(vec->type != VT_VECTOR){
         abort();
     }
@@ -1028,12 +1138,15 @@ ExVectorToString_3_1(RnCtx* ctx, Value* out, Value* vec, Value* start,
     if(end->value.as_int64 < 0){
         abort();
     }
-    vector_to_string(ctx, out, vec->value.as_vector,
-                     start->value.as_int64, end->value.as_int64);
+    RNFUNC_CALL(ctx, vector_to_string(ctx, out, vec->value.as_vector,
+                                      start->value.as_int64, 
+                                      end->value.as_int64));
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExVectorToString_2_1(RnCtx* ctx, Value* out, Value* vec, Value* start){
+    RNFUNC_BEGIN;
     if(vec->type != VT_VECTOR){
         abort();
     }
@@ -1043,39 +1156,49 @@ ExVectorToString_2_1(RnCtx* ctx, Value* out, Value* vec, Value* start){
     if(start->value.as_int64 < 0){
         abort();
     }
-    vector_to_string(ctx, out, vec->value.as_vector,
-                     start->value.as_int64, vec->value.as_vector->length);
+    RNFUNC_CALL(ctx, vector_to_string(ctx, out, vec->value.as_vector,
+                                      start->value.as_int64, 
+                                      vec->value.as_vector->length));
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExVectorToString_1_1(RnCtx* ctx, Value* out, Value* vec){
+    RNFUNC_BEGIN;
     if(vec->type != VT_VECTOR){
         abort();
     }
-    vector_to_string(ctx, out, vec->value.as_vector,
-                     0, vec->value.as_vector->length);
+    RNFUNC_CALL(ctx, vector_to_string(ctx, out, vec->value.as_vector,
+                                      0, vec->value.as_vector->length));
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExVectorToString(RnCtx* ctx, int argc, Value* stack){
+    RNFUNC_BEGIN;
     switch(argc){
         case 1:
-            ExCall_1_1(ExVectorToString_1_1, ctx, argc, stack);
+            RNFUNC_CALL(ctx, 
+                        ExCall_1_1(ExVectorToString_1_1, ctx, argc, stack));
             break;
         case 2:
-            ExCall_2_1(ExVectorToString_2_1, ctx, argc, stack);
+            RNFUNC_CALL(ctx,
+                        ExCall_2_1(ExVectorToString_2_1, ctx, argc, stack));
             break;
         case 3:
-            ExCall_3_1(ExVectorToString_3_1, ctx, argc, stack);
+            RNFUNC_CALL(ctx,
+                        ExCall_3_1(ExVectorToString_3_1, ctx, argc, stack));
             break;
         default:
             abort();
             break;
     }
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 list_to_vector(RnCtx* ctx, Value* out, Value* lis, int skip, int limit){
+    RNFUNC_BEGIN;
     Value input;
     Value tmp;
     ObjString* str;
@@ -1092,7 +1215,7 @@ list_to_vector(RnCtx* ctx, Value* out, Value* lis, int skip, int limit){
         if(lis->type != VT_RIB){
             abort();
         }
-        RnRibRef(ctx, lis, lis, 1);
+        RNFUNC_CALL(ctx, RnRibRef(ctx, lis, lis, 1));
     }
     RnValueRef(ctx, &input, lis->value, lis->type);
     /* Pass1: calc string size */
@@ -1112,7 +1235,7 @@ list_to_vector(RnCtx* ctx, Value* out, Value* lis, int skip, int limit){
             }
             c = tmp.value.as_rib->field[0].as_char;
             siz += utf8_ebytes(c);
-            RnRibRef(ctx, &tmp, &tmp, 1);
+            RNFUNC_CALL(ctx, RnRibRef(ctx, &tmp, &tmp, 1));
         }else{
             abort();
         }
@@ -1143,7 +1266,7 @@ list_to_vector(RnCtx* ctx, Value* out, Value* lis, int skip, int limit){
             c = tmp.value.as_rib->field[0].as_char;
             utf8_encode(p, pend, c);
             p += utf8_ebytes(c);
-            RnRibRef(ctx, &tmp, &tmp, 1);
+            RNFUNC_CALL(ctx, RnRibRef(ctx, &tmp, &tmp, 1));
         }else{
             abort();
         }
@@ -1161,11 +1284,13 @@ list_to_vector(RnCtx* ctx, Value* out, Value* lis, int skip, int limit){
     RnValueRef(ctx, out, v, VT_STRING);
     RnValueUnlink(ctx, &tmp);
     RnValueUnlink(ctx, &input);
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExListToString_3_1(RnCtx* ctx, Value* out, Value* lis, 
                    Value* start, Value* end){
+    RNFUNC_BEGIN;
     if(start->type != VT_INT64){
         abort();
     }
@@ -1178,46 +1303,54 @@ ExListToString_3_1(RnCtx* ctx, Value* out, Value* lis,
     if(end->value.as_int64 < 0){
         abort();
     }
-    list_to_vector(ctx, out, lis, start->value.as_int64,
-                   end->value.as_int64);
+    RNFUNC_CALL(ctx, list_to_vector(ctx, out, lis, start->value.as_int64,
+                                    end->value.as_int64));
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExListToString_2_1(RnCtx* ctx, Value* out, Value* lis, Value* start){
+    RNFUNC_BEGIN;
     if(start->type != VT_INT64){
         abort();
     }
     if(start->value.as_int64 < 0){
         abort();
     }
-    list_to_vector(ctx, out, lis, start->value.as_int64, -1);
+    RNFUNC_CALL(ctx, list_to_vector(ctx, out, lis, start->value.as_int64, -1));
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExListToString_1_1(RnCtx* ctx, Value* out, Value* lis){
-    list_to_vector(ctx, out, lis, 0, -1);
+    RNFUNC_BEGIN;
+    RNFUNC_CALL(ctx, list_to_vector(ctx, out, lis, 0, -1));
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExListToString(RnCtx* ctx, int argc, Value* stack){
+    RNFUNC_BEGIN;
     switch(argc){
         case 1:
-            ExCall_1_1(ExListToString_1_1, ctx, argc, stack);
+            RNFUNC_CALL(ctx, ExCall_1_1(ExListToString_1_1, ctx, argc, stack));
             break;
         case 2:
-            ExCall_2_1(ExListToString_2_1, ctx, argc, stack);
+            RNFUNC_CALL(ctx, ExCall_2_1(ExListToString_2_1, ctx, argc, stack));
             break;
         case 3:
-            ExCall_3_1(ExListToString_3_1, ctx, argc, stack);
+            RNFUNC_CALL(ctx, ExCall_3_1(ExListToString_3_1, ctx, argc, stack));
             break;
         default:
             abort();
             break;
     }
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 number_to_string(RnCtx* ctx, Value* out, Value* z, int radix){
+    RNFUNC_BEGIN;
     char buf[128];
     switch(z->type){
         case VT_INT64:
@@ -1243,39 +1376,49 @@ number_to_string(RnCtx* ctx, Value* out, Value* z, int radix){
             abort();
             break;
     }
-    RnString(ctx, out, buf, strnlen(buf, sizeof(buf)));
+    RNFUNC_CALL(ctx, RnString(ctx, out, buf, strnlen(buf, sizeof(buf))));
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExNumberToString_2_1(RnCtx* ctx, Value* out, Value* z, Value* radix){
+    RNFUNC_BEGIN;
     if(radix->type != VT_INT64){
         abort();
     }
-    number_to_string(ctx, out, z, (int)radix->value.as_int64);
+    RNFUNC_CALL(ctx, number_to_string(ctx, out, z, (int)radix->value.as_int64));
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExNumberToString_1_1(RnCtx* ctx, Value* out, Value* z){
-    number_to_string(ctx, out, z, 10);
+    RNFUNC_BEGIN;
+    RNFUNC_CALL(ctx, number_to_string(ctx, out, z, 10));
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExNumberToString(RnCtx* ctx, int argc, Value* stack){
+    RNFUNC_BEGIN;
     switch(argc){
         case 1:
-            ExCall_1_1(ExNumberToString_1_1, ctx, argc, stack);
+            RNFUNC_CALL(ctx, 
+                        ExCall_1_1(ExNumberToString_1_1, ctx, argc, stack));
             break;
         case 2:
-            ExCall_2_1(ExNumberToString_2_1, ctx, argc, stack);
+            RNFUNC_CALL(ctx,
+                        ExCall_2_1(ExNumberToString_2_1, ctx, argc, stack));
             break;
         default:
             abort();
             break;
     }
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 string_to_number(RnCtx* ctx, Value* out, Value* s, int radix){
+    RNFUNC_BEGIN;
     // FIXME: Implement this seriously
     size_t i;
     ObjString* str;
@@ -1318,7 +1461,7 @@ string_to_number(RnCtx* ctx, Value* out, Value* s, int radix){
         case 8:
         case 16:
             reg = strtoimax(t, NULL, radix);
-            RnInt64(ctx, out, reg);
+            RNFUNC_CALL(ctx, RnInt64(ctx, out, reg));
             break;
         case 10:
             /* Pass1: Scan for a period */
@@ -1333,40 +1476,49 @@ string_to_number(RnCtx* ctx, Value* out, Value* s, int radix){
             /* Pass2: Actual conversion */
             d = strtod(str->str, NULL);
             if(round(d) == d && (!is_inexact)){
-                RnInt64(ctx, out, (int64_t)d);
+                RNFUNC_CALL(ctx, RnInt64(ctx, out, (int64_t)d));
             }else{
-                RnDouble(ctx, out, d);
+                RNFUNC_CALL(ctx, RnDouble(ctx, out, d));
             }
             break;
     }
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExStringToNumber_2_1(RnCtx* ctx, Value* out, Value* s, Value* radix){
+    RNFUNC_BEGIN;
     if(radix->type != VT_INT64){
         abort();
     }
-    string_to_number(ctx, out, s, (int)radix->value.as_int64);
+    RNFUNC_CALL(ctx, string_to_number(ctx, out, s, (int)radix->value.as_int64));
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExStringToNumber_1_1(RnCtx* ctx, Value* out, Value* s){
-    string_to_number(ctx, out, s, 10);
+    RNFUNC_BEGIN;
+    RNFUNC_CALL(ctx, string_to_number(ctx, out, s, 10));
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExStringToNumber(RnCtx* ctx, int argc, Value* stack){
+    RNFUNC_BEGIN;
     switch(argc){
         case 1:
-            ExCall_1_1(ExStringToNumber_1_1, ctx, argc, stack);
+            RNFUNC_CALL(ctx, 
+                        ExCall_1_1(ExStringToNumber_1_1, ctx, argc, stack));
             break;
         case 2:
-            ExCall_2_1(ExStringToNumber_2_1, ctx, argc, stack);
+            RNFUNC_CALL(ctx,
+                        ExCall_2_1(ExStringToNumber_2_1, ctx, argc, stack));
             break;
         default:
             abort();
             break;
     }
+    RNFUNC_END;
 }
 
 static const char*
@@ -1390,8 +1542,9 @@ utf8_skip(const char* start, const char* end, size_t count){
     }
 }
 
-static void
+static RnResult
 ExStringToUtf8_3_1(RnCtx* ctx, Value* out, Value* s, Value* start, Value* end){
+    RNFUNC_BEGIN;
     const char* begin;
     const char* tail;
     const char* term;
@@ -1419,12 +1572,14 @@ ExStringToUtf8_3_1(RnCtx* ctx, Value* out, Value* s, Value* start, Value* end){
     begin = utf8_skip(s->value.as_string->str, term, start->value.as_int64);
     tail = utf8_skip(begin, term, end->value.as_int64 - start->value.as_int64);
     outlen = tail - begin;
-    RnBytevector(ctx, out, outlen);
+    RNFUNC_CALL(ctx, RnBytevector(ctx, out, outlen));
     memcpy(out->value.as_bytevector->buf, begin, outlen);
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExStringToUtf8_2_1(RnCtx* ctx, Value* out, Value* s, Value* start){
+    RNFUNC_BEGIN;
     const char* begin;
     const char* end;
     size_t outlen;
@@ -1441,42 +1596,48 @@ ExStringToUtf8_2_1(RnCtx* ctx, Value* out, Value* s, Value* start){
     end = s->value.as_string->str + s->value.as_string->len;
     begin = utf8_skip(s->value.as_string->str, end, start->value.as_int64);
     outlen = end - begin;
-    RnBytevector(ctx, out, outlen);
+    RNFUNC_CALL(ctx, RnBytevector(ctx, out, outlen));
     memcpy(out->value.as_bytevector->buf, begin, outlen);
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExStringToUtf8_1_1(RnCtx* ctx, Value* out, Value* s){
+    RNFUNC_BEGIN;
     if(s->type != VT_STRING){
         abort();
     }
-    RnBytevector(ctx, out, s->value.as_string->len);
+    RNFUNC_CALL(ctx, RnBytevector(ctx, out, s->value.as_string->len));
     memcpy(out->value.as_bytevector->buf,
            s->value.as_string->str,
            s->value.as_string->len);
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExStringToUtf8(RnCtx* ctx, int argc, Value* stack){
+    RNFUNC_BEGIN;
     switch(argc){
         case 1:
-            ExCall_1_1(ExStringToUtf8_1_1, ctx, argc, stack);
+            RNFUNC_CALL(ctx, ExCall_1_1(ExStringToUtf8_1_1, ctx, argc, stack));
             break;
         case 2:
-            ExCall_2_1(ExStringToUtf8_2_1, ctx, argc, stack);
+            RNFUNC_CALL(ctx, ExCall_2_1(ExStringToUtf8_2_1, ctx, argc, stack));
             break;
         case 3:
-            ExCall_3_1(ExStringToUtf8_3_1, ctx, argc, stack);
+            RNFUNC_CALL(ctx, ExCall_3_1(ExStringToUtf8_3_1, ctx, argc, stack));
             break;
         default:
             abort();
             break;
     }
+    RNFUNC_END;
 }
 
 /* $error/core (VM) */
-static void
+static RnResult
 ExErrorCore(RnCtx* ctx, int argc, Value* stack){
+    RNFUNC_BEGIN;
     int i;
     Value tmp, tmp2;
     RnValueLink(ctx, &tmp);
@@ -1493,16 +1654,17 @@ ExErrorCore(RnCtx* ctx, int argc, Value* stack){
                 fprintf(stderr, "BROKEN\n");
                 break;
             }
-            RnRibRef(ctx, &tmp2, &tmp, 0);
+            RNFUNC_CALL(ctx, RnRibRef(ctx, &tmp2, &tmp, 0));
             emergency_print(ctx, &tmp2);
             fprintf(stderr, "\n");
-            RnRibRef(ctx, &tmp, &tmp, 1);
+            RNFUNC_CALL(ctx, RnRibRef(ctx, &tmp, &tmp, 1));
         }
     }else{
         fprintf(stderr, "BROKEN STACK!\n");
         emergency_print(ctx, stack);
     }
     abort();
+    RNFUNC_END;
 }
 
 
@@ -1589,85 +1751,101 @@ ExErrorCore(RnCtx* ctx, int argc, Value* stack){
     x("$fx>", ExFxGt, _2_1) \
     x("$fx>=", ExFxGtEq, _2_1)
 
-static void
+static RnResult
 ExFxGtEq(RnCtx* ctx, Value* out, Value* x, Value* y){
+    RNFUNC_BEGIN;
     if(x->type != VT_INT64){
         abort();
     }
     if(y->type != VT_INT64){
         abort();
     }
-    to_bool(ctx, out, x->value.as_int64 >= y->value.as_int64);
+    RNFUNC_CALL(ctx, to_bool(ctx, out, 
+                             x->value.as_int64 >= y->value.as_int64));
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExFxGt(RnCtx* ctx, Value* out, Value* x, Value* y){
+    RNFUNC_BEGIN;
     if(x->type != VT_INT64){
         abort();
     }
     if(y->type != VT_INT64){
         abort();
     }
-    to_bool(ctx, out, x->value.as_int64 > y->value.as_int64);
+    RNFUNC_CALL(ctx, to_bool(ctx, out, x->value.as_int64 > y->value.as_int64));
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExFxLtEq(RnCtx* ctx, Value* out, Value* x, Value* y){
+    RNFUNC_BEGIN;
     if(x->type != VT_INT64){
         abort();
     }
     if(y->type != VT_INT64){
         abort();
     }
-    to_bool(ctx, out, x->value.as_int64 <= y->value.as_int64);
+    RNFUNC_CALL(ctx, to_bool(ctx, out, x->value.as_int64 <= y->value.as_int64));
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExFxLt(RnCtx* ctx, Value* out, Value* x, Value* y){
+    RNFUNC_BEGIN;
     if(x->type != VT_INT64){
         abort();
     }
     if(y->type != VT_INT64){
         abort();
     }
-    to_bool(ctx, out, x->value.as_int64 < y->value.as_int64);
+    RNFUNC_CALL(ctx, to_bool(ctx, out, x->value.as_int64 < y->value.as_int64));
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExFxEq(RnCtx* ctx, Value* out, Value* x, Value* y){
+    RNFUNC_BEGIN;
     if(x->type != VT_INT64){
         abort();
     }
     if(y->type != VT_INT64){
         abort();
     }
-    to_bool(ctx, out, x->value.as_int64 == y->value.as_int64);
+    RNFUNC_CALL(ctx, to_bool(ctx, out, x->value.as_int64 == y->value.as_int64));
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExFxSub(RnCtx* ctx, Value* out, Value* x, Value* y){
+    RNFUNC_BEGIN;
     if(x->type != VT_INT64){
         abort();
     }
     if(y->type != VT_INT64){
         abort();
     }
-    RnInt64(ctx, out, x->value.as_int64 - y->value.as_int64);
+    RNFUNC_CALL(ctx, RnInt64(ctx, out, x->value.as_int64 - y->value.as_int64));
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExFxAdd(RnCtx* ctx, Value* out, Value* x, Value* y){
+    RNFUNC_BEGIN;
     if(x->type != VT_INT64){
         abort();
     }
     if(y->type != VT_INT64){
         abort();
     }
-    RnInt64(ctx, out, x->value.as_int64 + y->value.as_int64);
+    RNFUNC_CALL(ctx, RnInt64(ctx, out, x->value.as_int64 + y->value.as_int64));
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExAdd(RnCtx* ctx, int argc, Value* stack){
+    RNFUNC_BEGIN;
     Value tmp;
     Value out;
     ValueContainer v;
@@ -1678,8 +1856,8 @@ ExAdd(RnCtx* ctx, int argc, Value* stack){
     v.as_int64 = 0;
     RnValueRef(ctx, &out, v, VT_INT64);
     while(argc){
-        RnRibRef(ctx, &tmp, stack, 0);
-        RnRibRef(ctx, stack, stack, 1);
+        RNFUNC_CALL(ctx, RnRibRef(ctx, &tmp, stack, 0));
+        RNFUNC_CALL(ctx, RnRibRef(ctx, stack, stack, 1));
         argc--;
         if(out.type == VT_INT64){
             i64 = out.value.as_int64;
@@ -1712,37 +1890,43 @@ ExAdd(RnCtx* ctx, int argc, Value* stack){
             abort();
         }
     }
-    RnCons(ctx, stack, &out, stack);
+    RNFUNC_CALL(ctx, RnCons(ctx, stack, &out, stack));
     RnValueUnlink(ctx, &out);
     RnValueUnlink(ctx, &tmp);
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 sub_itr(RnCtx* ctx, int rest, Value* out, Value* stack){
+    RNFUNC_BEGIN;
     Value acc;
     if(rest == 0){
-        RnRibRef(ctx, out, stack, 0);
-        RnRibRef(ctx, stack, stack, 1);
+        RNFUNC_CALL(ctx, RnRibRef(ctx, out, stack, 0));
+        RNFUNC_CALL(ctx, RnRibRef(ctx, stack, stack, 1));
     }else{
         RnValueLink(ctx, &acc);
-        RnRibRef(ctx, &acc, stack, 0);
-        RnRibRef(ctx, stack, stack, 1);
-        sub_itr(ctx, rest - 1, out, stack);
+        RNFUNC_CALL(ctx, RnRibRef(ctx, &acc, stack, 0));
+        RNFUNC_CALL(ctx, RnRibRef(ctx, stack, stack, 1));
+        RNFUNC_CALL(ctx, sub_itr(ctx, rest - 1, out, stack));
         if(out->type == VT_INT64){
             if(acc.type == VT_INT64){
-                RnInt64(ctx, out, out->value.as_int64 - acc.value.as_int64);
+                RNFUNC_CALL(ctx, 
+                            RnInt64(ctx, out, 
+                                    out->value.as_int64 - acc.value.as_int64));
             }else if(acc.type == VT_DOUBLE){
-                RnDouble(ctx, out, 
-                         (double)out->value.as_int64 - acc.value.as_double);
+                RNFUNC_CALL(ctx, RnDouble(ctx, out, 
+                                          (double)out->value.as_int64
+                                          - acc.value.as_double));
             }else{
                 abort();
             }
         }else if(out->type == VT_DOUBLE){
             if(acc.type == VT_INT64){
-                RnDouble(ctx, out, 
-                         out->value.as_double - (double)acc.value.as_int64);
+                RNFUNC_CALL(ctx, RnDouble(ctx, out, out->value.as_double
+                                          - (double)acc.value.as_int64));
             }else if(acc.type == VT_DOUBLE){
-                RnDouble(ctx, out, out->value.as_double - acc.value.as_double);
+                RNFUNC_CALL(ctx, RnDouble(ctx, out, out->value.as_double
+                                          - acc.value.as_double));
             }else{
                 abort();
             }
@@ -1751,18 +1935,20 @@ sub_itr(RnCtx* ctx, int rest, Value* out, Value* stack){
         }
         RnValueUnlink(ctx, &acc);
     }
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExSub(RnCtx* ctx, int argc, Value* stack){
+    RNFUNC_BEGIN;
     Value out;
     ValueContainer v;
     RnValueLink(ctx, &out);
     if(argc == 0){
         abort();
     }else if(argc == 1){
-        RnRibRef(ctx, &out, stack, 0);
-        RnRibRef(ctx, stack, stack, 1);
+        RNFUNC_CALL(ctx, RnRibRef(ctx, &out, stack, 0));
+        RNFUNC_CALL(ctx, RnRibRef(ctx, stack, stack, 1));
         if(out.type == VT_INT64){
             v = out.value;
             v.as_int64 = (int64_t)0 - v.as_int64;
@@ -1775,14 +1961,16 @@ ExSub(RnCtx* ctx, int argc, Value* stack){
             abort();
         }
     }else{
-        sub_itr(ctx, argc - 1, &out, stack);
+        RNFUNC_CALL(ctx, sub_itr(ctx, argc - 1, &out, stack));
     }
-    RnCons(ctx, stack, &out, stack);
+    RNFUNC_CALL(ctx, RnCons(ctx, stack, &out, stack));
     RnValueUnlink(ctx, &out);
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExMul(RnCtx* ctx, int argc, Value* stack){
+    RNFUNC_BEGIN;
     Value tmp;
     Value out;
     ValueContainer v;
@@ -1793,8 +1981,8 @@ ExMul(RnCtx* ctx, int argc, Value* stack){
     v.as_int64 = 1;
     RnValueRef(ctx, &out, v, VT_INT64);
     while(argc){
-        RnRibRef(ctx, &tmp, stack, 0);
-        RnRibRef(ctx, stack, stack, 1);
+        RNFUNC_CALL(ctx, RnRibRef(ctx, &tmp, stack, 0));
+        RNFUNC_CALL(ctx, RnRibRef(ctx, stack, stack, 1));
         argc--;
         if(out.type == VT_INT64){
             i64 = out.value.as_int64;
@@ -1827,13 +2015,15 @@ ExMul(RnCtx* ctx, int argc, Value* stack){
             abort();
         }
     }
-    RnCons(ctx, stack, &out, stack);
+    RNFUNC_CALL(ctx, RnCons(ctx, stack, &out, stack));
     RnValueUnlink(ctx, &out);
     RnValueUnlink(ctx, &tmp);
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExEq(RnCtx* ctx, int argc, Value* stack){
+    RNFUNC_BEGIN;
     int r;
     Value tmp;
     ValueContainer v;
@@ -1845,7 +2035,7 @@ ExEq(RnCtx* ctx, int argc, Value* stack){
     if(argc == 0){
         abort();
     }
-    RnRibRef(ctx, &tmp, stack, 0);
+    RNFUNC_CALL(ctx, RnRibRef(ctx, &tmp, stack, 0));
     if(tmp.type == VT_INT64){
         v.as_int64 = tmp.value.as_int64;
         t = VT_INT64;
@@ -1856,11 +2046,11 @@ ExEq(RnCtx* ctx, int argc, Value* stack){
         abort();
     }
     r = 1;
-    RnRibRef(ctx, stack, stack, 1);
+    RNFUNC_CALL(ctx, RnRibRef(ctx, stack, stack, 1));
     argc--;
     while(argc){
-        RnRibRef(ctx, &tmp, stack, 0);
-        RnRibRef(ctx, stack, stack, 1);
+        RNFUNC_CALL(ctx, RnRibRef(ctx, &tmp, stack, 0));
+        RNFUNC_CALL(ctx, RnRibRef(ctx, stack, stack, 1));
         argc--;
 
         if(tmp.type == VT_INT64){
@@ -1897,17 +2087,19 @@ ExEq(RnCtx* ctx, int argc, Value* stack){
 
     }
     while(argc){
-        RnRibRef(ctx, stack, stack, 1);
+        RNFUNC_CALL(ctx, RnRibRef(ctx, stack, stack, 1));
         argc--;
     }
-    to_bool(ctx, &out, r);
-    RnCons(ctx, stack, &out, stack);
+    RNFUNC_CALL(ctx, to_bool(ctx, &out, r));
+    RNFUNC_CALL(ctx, RnCons(ctx, stack, &out, stack));
     RnValueUnlink(ctx, &out);
     RnValueUnlink(ctx, &tmp);
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExLt(RnCtx* ctx, int argc, Value* stack){
+    RNFUNC_BEGIN;
     int r;
     Value tmp;
     ValueContainer v;
@@ -1919,7 +2111,7 @@ ExLt(RnCtx* ctx, int argc, Value* stack){
     if(argc == 0){
         abort();
     }
-    RnRibRef(ctx, &tmp, stack, 0);
+    RNFUNC_CALL(ctx, RnRibRef(ctx, &tmp, stack, 0));
     if(tmp.type == VT_INT64){
         v.as_int64 = tmp.value.as_int64;
         t = VT_INT64;
@@ -1930,11 +2122,11 @@ ExLt(RnCtx* ctx, int argc, Value* stack){
         abort();
     }
     r = 1;
-    RnRibRef(ctx, stack, stack, 1);
+    RNFUNC_CALL(ctx, RnRibRef(ctx, stack, stack, 1));
     argc--;
     while(argc){
-        RnRibRef(ctx, &tmp, stack, 0);
-        RnRibRef(ctx, stack, stack, 1);
+        RNFUNC_CALL(ctx, RnRibRef(ctx, &tmp, stack, 0));
+        RNFUNC_CALL(ctx, RnRibRef(ctx, stack, stack, 1));
         argc--;
 
         if(tmp.type == VT_INT64){
@@ -1976,17 +2168,19 @@ ExLt(RnCtx* ctx, int argc, Value* stack){
 
     }
     while(argc){
-        RnRibRef(ctx, stack, stack, 1);
+        RNFUNC_CALL(ctx, RnRibRef(ctx, stack, stack, 1));
         argc--;
     }
-    to_bool(ctx, &out, r);
-    RnCons(ctx, stack, &out, stack);
+    RNFUNC_CALL(ctx, to_bool(ctx, &out, r));
+    RNFUNC_CALL(ctx, RnCons(ctx, stack, &out, stack));
     RnValueUnlink(ctx, &out);
     RnValueUnlink(ctx, &tmp);
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExLtEq(RnCtx* ctx, int argc, Value* stack){
+    RNFUNC_BEGIN;
     int r;
     Value tmp;
     ValueContainer v;
@@ -1998,7 +2192,7 @@ ExLtEq(RnCtx* ctx, int argc, Value* stack){
     if(argc == 0){
         abort();
     }
-    RnRibRef(ctx, &tmp, stack, 0);
+    RNFUNC_CALL(ctx, RnRibRef(ctx, &tmp, stack, 0));
     if(tmp.type == VT_INT64){
         v.as_int64 = tmp.value.as_int64;
         t = VT_INT64;
@@ -2009,11 +2203,11 @@ ExLtEq(RnCtx* ctx, int argc, Value* stack){
         abort();
     }
     r = 1;
-    RnRibRef(ctx, stack, stack, 1);
+    RNFUNC_CALL(ctx, RnRibRef(ctx, stack, stack, 1));
     argc--;
     while(argc){
-        RnRibRef(ctx, &tmp, stack, 0);
-        RnRibRef(ctx, stack, stack, 1);
+        RNFUNC_CALL(ctx, RnRibRef(ctx, &tmp, stack, 0));
+        RNFUNC_CALL(ctx, RnRibRef(ctx, stack, stack, 1));
         argc--;
 
         if(tmp.type == VT_INT64){
@@ -2055,17 +2249,19 @@ ExLtEq(RnCtx* ctx, int argc, Value* stack){
 
     }
     while(argc){
-        RnRibRef(ctx, stack, stack, 1);
+        RNFUNC_CALL(ctx, RnRibRef(ctx, stack, stack, 1));
         argc--;
     }
-    to_bool(ctx, &out, r);
-    RnCons(ctx, stack, &out, stack);
+    RNFUNC_CALL(ctx, to_bool(ctx, &out, r));
+    RNFUNC_CALL(ctx, RnCons(ctx, stack, &out, stack));
     RnValueUnlink(ctx, &out);
     RnValueUnlink(ctx, &tmp);
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExGt(RnCtx* ctx, int argc, Value* stack){
+    RNFUNC_BEGIN;
     int r;
     Value tmp;
     ValueContainer v;
@@ -2077,7 +2273,7 @@ ExGt(RnCtx* ctx, int argc, Value* stack){
     if(argc == 0){
         abort();
     }
-    RnRibRef(ctx, &tmp, stack, 0);
+    RNFUNC_CALL(ctx, RnRibRef(ctx, &tmp, stack, 0));
     if(tmp.type == VT_INT64){
         v.as_int64 = tmp.value.as_int64;
         t = VT_INT64;
@@ -2088,11 +2284,11 @@ ExGt(RnCtx* ctx, int argc, Value* stack){
         abort();
     }
     r = 1;
-    RnRibRef(ctx, stack, stack, 1);
+    RNFUNC_CALL(ctx, RnRibRef(ctx, stack, stack, 1));
     argc--;
     while(argc){
-        RnRibRef(ctx, &tmp, stack, 0);
-        RnRibRef(ctx, stack, stack, 1);
+        RNFUNC_CALL(ctx, RnRibRef(ctx, &tmp, stack, 0));
+        RNFUNC_CALL(ctx, RnRibRef(ctx, stack, stack, 1));
         argc--;
 
         if(tmp.type == VT_INT64){
@@ -2134,17 +2330,19 @@ ExGt(RnCtx* ctx, int argc, Value* stack){
 
     }
     while(argc){
-        RnRibRef(ctx, stack, stack, 1);
+        RNFUNC_CALL(ctx, RnRibRef(ctx, stack, stack, 1));
         argc--;
     }
-    to_bool(ctx, &out, r);
-    RnCons(ctx, stack, &out, stack);
+    RNFUNC_CALL(ctx, to_bool(ctx, &out, r));
+    RNFUNC_CALL(ctx, RnCons(ctx, stack, &out, stack));
     RnValueUnlink(ctx, &out);
     RnValueUnlink(ctx, &tmp);
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExGtEq(RnCtx* ctx, int argc, Value* stack){
+    RNFUNC_BEGIN;
     int r;
     Value tmp;
     ValueContainer v;
@@ -2156,7 +2354,7 @@ ExGtEq(RnCtx* ctx, int argc, Value* stack){
     if(argc == 0){
         abort();
     }
-    RnRibRef(ctx, &tmp, stack, 0);
+    RNFUNC_CALL(ctx, RnRibRef(ctx, &tmp, stack, 0));
     if(tmp.type == VT_INT64){
         v.as_int64 = tmp.value.as_int64;
         t = VT_INT64;
@@ -2167,11 +2365,11 @@ ExGtEq(RnCtx* ctx, int argc, Value* stack){
         abort();
     }
     r = 1;
-    RnRibRef(ctx, stack, stack, 1);
+    RNFUNC_CALL(ctx, RnRibRef(ctx, stack, stack, 1));
     argc--;
     while(argc){
-        RnRibRef(ctx, &tmp, stack, 0);
-        RnRibRef(ctx, stack, stack, 1);
+        RNFUNC_CALL(ctx, RnRibRef(ctx, &tmp, stack, 0));
+        RNFUNC_CALL(ctx, RnRibRef(ctx, stack, stack, 1));
         argc--;
 
         if(tmp.type == VT_INT64){
@@ -2213,18 +2411,20 @@ ExGtEq(RnCtx* ctx, int argc, Value* stack){
 
     }
     while(argc){
-        RnRibRef(ctx, stack, stack, 1);
+        RNFUNC_CALL(ctx, RnRibRef(ctx, stack, stack, 1));
         argc--;
     }
-    to_bool(ctx, &out, r);
-    RnCons(ctx, stack, &out, stack);
+    RNFUNC_CALL(ctx, to_bool(ctx, &out, r));
+    RNFUNC_CALL(ctx, RnCons(ctx, stack, &out, stack));
     RnValueUnlink(ctx, &out);
     RnValueUnlink(ctx, &tmp);
+    RNFUNC_END;
 }
 
 
-static void
+static RnResult
 ExFxDiv(RnCtx* ctx, Value* out, Value* x, Value* y){
+    RNFUNC_BEGIN;
     ValueContainer v;
     if(x->type != VT_INT64){
         abort();
@@ -2234,10 +2434,12 @@ ExFxDiv(RnCtx* ctx, Value* out, Value* x, Value* y){
     }
     v.as_int64 = x->value.as_int64 / y->value.as_int64;
     RnValueRef(ctx, out, v, VT_INT64);
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExFlDiv(RnCtx* ctx, Value* out, Value* x, Value* y){
+    RNFUNC_BEGIN;
     ValueContainer v;
     if(x->type != VT_DOUBLE){
         abort();
@@ -2247,23 +2449,27 @@ ExFlDiv(RnCtx* ctx, Value* out, Value* x, Value* y){
     }
     v.as_double = x->value.as_double / y->value.as_double;
     RnValueRef(ctx, out, v, VT_DOUBLE);
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExFxToFl(RnCtx* ctx, Value* out, Value* x){
+    RNFUNC_BEGIN;
     // FIXME: Allows double
     if(x->type == VT_DOUBLE){
-        RnDouble(ctx, out, x->value.as_double);
+        RNFUNC_CALL(ctx, RnDouble(ctx, out, x->value.as_double));
     }else{
         if(x->type != VT_INT64){
             abort();
         }
-        RnDouble(ctx, out, (double)x->value.as_int64);
+        RNFUNC_CALL(ctx, RnDouble(ctx, out, (double)x->value.as_int64));
     }
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExFxExpt(RnCtx* ctx, Value* out, Value* x, Value* y){
+    RNFUNC_BEGIN;
     // FIXME: Implement this
     double a,b;
     if(x->type != VT_INT64){
@@ -2275,11 +2481,13 @@ ExFxExpt(RnCtx* ctx, Value* out, Value* x, Value* y){
 
     a = (double)x->value.as_int64;
     b = (double)y->value.as_int64;
-    RnInt64(ctx, out, (int64_t)pow(a,b));
+    RNFUNC_CALL(ctx, RnInt64(ctx, out, (int64_t)pow(a,b)));
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExFxFloorDiv(RnCtx* ctx, Value* out1, Value* out2, Value* x, Value* y){
+    RNFUNC_BEGIN;
     int64_t r1;
     int64_t r2;
     // FIXME: Implement this
@@ -2291,12 +2499,14 @@ ExFxFloorDiv(RnCtx* ctx, Value* out1, Value* out2, Value* x, Value* y){
     }
     r1 = x->value.as_int64 / y->value.as_int64;
     r2 = x->value.as_int64 % y->value.as_int64;
-    RnInt64(ctx, out1, r1);
-    RnInt64(ctx, out2, r2);
+    RNFUNC_CALL(ctx, RnInt64(ctx, out1, r1));
+    RNFUNC_CALL(ctx, RnInt64(ctx, out2, r2));
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExFxTruncateDiv(RnCtx* ctx, Value* out1, Value* out2, Value* x, Value* y){
+    RNFUNC_BEGIN;
     int64_t r1;
     int64_t r2;
     // FIXME: Implement this
@@ -2308,223 +2518,271 @@ ExFxTruncateDiv(RnCtx* ctx, Value* out1, Value* out2, Value* x, Value* y){
     }
     r1 = x->value.as_int64 / y->value.as_int64;
     r2 = x->value.as_int64 % y->value.as_int64;
-    RnInt64(ctx, out1, r1);
-    RnInt64(ctx, out2, r2);
-
+    RNFUNC_CALL(ctx, RnInt64(ctx, out1, r1));
+    RNFUNC_CALL(ctx, RnInt64(ctx, out2, r2));
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExFlNanP(RnCtx* ctx, Value* out, Value* x){
+    RNFUNC_BEGIN;
     // FIXME: Allows int64
     if(x->type == VT_INT64){
-        to_bool(ctx, out, 0);
+        RNFUNC_CALL(ctx, to_bool(ctx, out, 0));
     }else{
         if(x->type != VT_DOUBLE){
             abort();
         }
-        to_bool(ctx, out, isnan(x->value.as_double));
+        RNFUNC_CALL(ctx, to_bool(ctx, out, isnan(x->value.as_double)));
     }
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExFlFiniteP(RnCtx* ctx, Value* out, Value* x){
+    RNFUNC_BEGIN;
     // FIXME: Allows int64
     if(x->type == VT_INT64){
-        to_bool(ctx, out, 1);
+        RNFUNC_CALL(ctx, to_bool(ctx, out, 1));
     }else{
         if(x->type != VT_DOUBLE){
             abort();
         }
-        to_bool(ctx, out, isfinite(x->value.as_double));
+        RNFUNC_CALL(ctx, to_bool(ctx, out, isfinite(x->value.as_double)));
     }
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExFlInfiniteP(RnCtx* ctx, Value* out, Value* x){
+    RNFUNC_BEGIN;
     // FIXME: Allows int64
     if(x->type == VT_INT64){
-        to_bool(ctx, out, 0);
+        RNFUNC_CALL(ctx, to_bool(ctx, out, 0));
     }else{
         if(x->type != VT_DOUBLE){
             abort();
         }
-        to_bool(ctx, out, ! isfinite(x->value.as_double));
+        RNFUNC_CALL(ctx, to_bool(ctx, out, ! isfinite(x->value.as_double)));
     }
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExFlToFx(RnCtx* ctx, Value* out, Value* x){
+    RNFUNC_BEGIN;
     // FIXME: Allow exact since it should work as `exact` as well..
     if(x->type == VT_INT64){
-        RnInt64(ctx, out, x->value.as_int64);
+        RNFUNC_CALL(ctx, RnInt64(ctx, out, x->value.as_int64));
     }else{
         if(x->type != VT_DOUBLE){
             abort();
         }
-        RnInt64(ctx, out, (int64_t)x->value.as_double);
+        RNFUNC_CALL(ctx, RnInt64(ctx, out, (int64_t)x->value.as_double));
     }
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExFlExpt(RnCtx* ctx, Value* out, Value* x, Value* y){
+    RNFUNC_BEGIN;
     if(x->type != VT_DOUBLE){
         abort();
     }
     if(y->type != VT_DOUBLE){
         abort();
     }
-    RnDouble(ctx, out, pow(x->value.as_double, y->value.as_double));
+    RNFUNC_CALL(ctx, RnDouble(ctx, out, 
+                              pow(x->value.as_double, y->value.as_double)));
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExFlFloor(RnCtx* ctx, Value* out, Value* x){
+    RNFUNC_BEGIN;
     if(x->type != VT_DOUBLE){
         abort();
     }
-    RnDouble(ctx, out, floor(x->value.as_double));
+    RNFUNC_CALL(ctx, RnDouble(ctx, out, floor(x->value.as_double)));
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExFlCeiling(RnCtx* ctx, Value* out, Value* x){
+    RNFUNC_BEGIN;
     if(x->type != VT_DOUBLE){
         abort();
     }
-    RnDouble(ctx, out, ceil(x->value.as_double));
+    RNFUNC_CALL(ctx, RnDouble(ctx, out, ceil(x->value.as_double)));
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExFlTruncate(RnCtx* ctx, Value* out, Value* x){
+    RNFUNC_BEGIN;
     if(x->type != VT_DOUBLE){
         abort();
     }
-    RnDouble(ctx, out, trunc(x->value.as_double));
+    RNFUNC_CALL(ctx, RnDouble(ctx, out, trunc(x->value.as_double)));
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExFlRound(RnCtx* ctx, Value* out, Value* x){
+    RNFUNC_BEGIN;
     if(x->type != VT_DOUBLE){
         abort();
     }
-    RnDouble(ctx, out, round(x->value.as_double));
+    RNFUNC_CALL(ctx, RnDouble(ctx, out, round(x->value.as_double)));
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExFlAcos(RnCtx* ctx, Value* out, Value* x){
+    RNFUNC_BEGIN;
     if(x->type != VT_DOUBLE){
         abort();
     }
-    RnDouble(ctx, out, acos(x->value.as_double));
+    RNFUNC_CALL(ctx, RnDouble(ctx, out, acos(x->value.as_double)));
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExFlAsin(RnCtx* ctx, Value* out, Value* x){
+    RNFUNC_BEGIN;
     if(x->type != VT_DOUBLE){
         abort();
     }
-    RnDouble(ctx, out, asin(x->value.as_double));
+    RNFUNC_CALL(ctx, RnDouble(ctx, out, asin(x->value.as_double)));
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExFlAtan(RnCtx* ctx, Value* out, Value* x){
+    RNFUNC_BEGIN;
     if(x->type != VT_DOUBLE){
         abort();
     }
-    RnDouble(ctx, out, atan(x->value.as_double));
+    RNFUNC_CALL(ctx, RnDouble(ctx, out, atan(x->value.as_double)));
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExFlAtan2(RnCtx* ctx, Value* out, Value* x, Value* y){
+    RNFUNC_BEGIN;
     if(x->type != VT_DOUBLE){
         abort();
     }
     if(y->type != VT_DOUBLE){
         abort();
     }
-    RnDouble(ctx, out, atan2(x->value.as_double, y->value.as_double));
+    RNFUNC_CALL(ctx, RnDouble(ctx, out, 
+                              atan2(x->value.as_double, y->value.as_double)));
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExFlCos(RnCtx* ctx, Value* out, Value* x){
+    RNFUNC_BEGIN;
     if(x->type != VT_DOUBLE){
         abort();
     }
-    RnDouble(ctx, out, cos(x->value.as_double));
+    RNFUNC_CALL(ctx, RnDouble(ctx, out, cos(x->value.as_double)));
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExFlSin(RnCtx* ctx, Value* out, Value* x){
+    RNFUNC_BEGIN;
     if(x->type != VT_DOUBLE){
         abort();
     }
-    RnDouble(ctx, out, sin(x->value.as_double));
+    RNFUNC_CALL(ctx, RnDouble(ctx, out, sin(x->value.as_double)));
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExFlTan(RnCtx* ctx, Value* out, Value* x){
+    RNFUNC_BEGIN;
     if(x->type != VT_DOUBLE){
         abort();
     }
-    RnDouble(ctx, out, tan(x->value.as_double));
+    RNFUNC_CALL(ctx, RnDouble(ctx, out, tan(x->value.as_double)));
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExFlExp(RnCtx* ctx, Value* out, Value* x){
+    RNFUNC_BEGIN;
     if(x->type != VT_DOUBLE){
         abort();
     }
-    RnDouble(ctx, out, exp(x->value.as_double));
+    RNFUNC_CALL(ctx, RnDouble(ctx, out, exp(x->value.as_double)));
+    RNFUNC_END;
 }
 
 
-static void
+static RnResult
 ExFlLog_2_1(RnCtx* ctx, Value* out, Value* x, Value* y){
+    RNFUNC_BEGIN;
     if(x->type != VT_DOUBLE){
         abort();
     }
     if(y->type != VT_DOUBLE){
         abort();
     }
-    RnDouble(ctx, out, log(x->value.as_double) / log(y->value.as_double));
+    RNFUNC_CALL(ctx, RnDouble(ctx, out, log(x->value.as_double) 
+                              / log(y->value.as_double)));
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExFlLog_1_1(RnCtx* ctx, Value* out, Value* x){
+    RNFUNC_BEGIN;
     if(x->type != VT_DOUBLE){
         abort();
     }
-    RnDouble(ctx, out, log(x->value.as_double));
+    RNFUNC_CALL(ctx, RnDouble(ctx, out, log(x->value.as_double)));
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExFlLog(RnCtx* ctx, int argc, Value* stack){
+    RNFUNC_BEGIN;
     switch(argc){
         case 1:
-            ExCall_1_1(ExFlLog_1_1, ctx, argc, stack);
+            RNFUNC_CALL(ctx, ExCall_1_1(ExFlLog_1_1, ctx, argc, stack));
             break;
         case 2:
-            ExCall_2_1(ExFlLog_2_1, ctx, argc, stack);
+            RNFUNC_CALL(ctx, ExCall_2_1(ExFlLog_2_1, ctx, argc, stack));
             break;
         default:
             abort();
     }
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExFlLoge(RnCtx* ctx, Value* out, Value* x){
+    RNFUNC_BEGIN;
     // FIXME: Tentative.
-    ExFlLog_1_1(ctx, out, x);
+    RNFUNC_CALL(ctx, ExFlLog_1_1(ctx, out, x));
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExFlSqrt(RnCtx* ctx, Value* out, Value* x){
+    RNFUNC_BEGIN;
     if(x->type != VT_DOUBLE){
         abort();
     }
-    RnDouble(ctx, out, sqrt(x->value.as_double));
+    RNFUNC_CALL(ctx, RnDouble(ctx, out, sqrt(x->value.as_double)));
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExFlFloorDiv(RnCtx* ctx, Value* out1, Value* out2, Value* x, Value* y){
+    RNFUNC_BEGIN;
     double r1, r2;
     // FIXME: Implement this
     if(x->type != VT_DOUBLE){
@@ -2535,12 +2793,14 @@ ExFlFloorDiv(RnCtx* ctx, Value* out1, Value* out2, Value* x, Value* y){
     }
     r1 = floor(x->value.as_double / y->value.as_double);
     r2 = x->value.as_double - (r1 * y->value.as_double);
-    RnDouble(ctx, out1, r1);
-    RnDouble(ctx, out2, r2);
+    RNFUNC_CALL(ctx, RnDouble(ctx, out1, r1));
+    RNFUNC_CALL(ctx, RnDouble(ctx, out2, r2));
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExFlTruncateDiv(RnCtx* ctx, Value* out1, Value* out2, Value* x, Value* y){
+    RNFUNC_BEGIN;
     double r1, r2;
     // FIXME: Implement this
     if(x->type != VT_DOUBLE){
@@ -2552,9 +2812,9 @@ ExFlTruncateDiv(RnCtx* ctx, Value* out1, Value* out2, Value* x, Value* y){
 
     r1 = trunc(x->value.as_double / y->value.as_double);
     r2 = x->value.as_double - (r1 * y->value.as_double);
-    RnDouble(ctx, out1, r1);
-    RnDouble(ctx, out2, r2);
-
+    RNFUNC_CALL(ctx, RnDouble(ctx, out1, r1));
+    RNFUNC_CALL(ctx, RnDouble(ctx, out2, r2));
+    RNFUNC_END;
 }
 
 
@@ -2584,8 +2844,9 @@ ExFlTruncateDiv(RnCtx* ctx, Value* out1, Value* out2, Value* x, Value* y){
     x("filehandle-stdout", ExFilehandleStdout, _0_1) \
     x("filehandle-stderr", ExFilehandleStderr, _0_1)
 
-static void
+static RnResult
 ExFileExistsP(RnCtx* ctx, Value* out, Value* str){
+    RNFUNC_BEGIN;
     FILE* fp;
     int r;
     if(str->type != VT_STRING){
@@ -2598,21 +2859,25 @@ ExFileExistsP(RnCtx* ctx, Value* out, Value* str){
     }else{
         r = 0;
     }
-    to_bool(ctx, out, r);
+    RNFUNC_CALL(ctx, to_bool(ctx, out, r));
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExDeleteFile(RnCtx* ctx, Value* out, Value* str){
+    RNFUNC_BEGIN;
     // FIXME: Implement this
     (void)ctx;
     (void)out;
     (void)str;
 
     abort();
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExFilehandleOpenInput(RnCtx* ctx, Value* out, Value* str){
+    RNFUNC_BEGIN;
     // FIXME: Provide some destructor
     FILE* fp;
     if(str->type != VT_STRING){
@@ -2620,14 +2885,16 @@ ExFilehandleOpenInput(RnCtx* ctx, Value* out, Value* str){
     }
     fp = fopen(str->value.as_string->str, "rb");
     if(fp){
-        RnInt64(ctx, out, (uintptr_t)fp);
+        RNFUNC_CALL(ctx, RnInt64(ctx, out, (uintptr_t)fp));
     }else{
-        to_bool(ctx, out, 0);
+        RNFUNC_CALL(ctx, to_bool(ctx, out, 0));
     }
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExFilehandleOpenOutput(RnCtx* ctx, Value* out, Value* str){
+    RNFUNC_BEGIN;
     // FIXME: Provide some destructor
     FILE* fp;
     if(str->type != VT_STRING){
@@ -2635,25 +2902,29 @@ ExFilehandleOpenOutput(RnCtx* ctx, Value* out, Value* str){
     }
     fp = fopen(str->value.as_string->str, "wb");
     if(fp){
-        RnInt64(ctx, out, (uintptr_t)fp);
+        RNFUNC_CALL(ctx, RnInt64(ctx, out, (uintptr_t)fp));
     }else{
-        to_bool(ctx, out, 0);
+        RNFUNC_CALL(ctx, to_bool(ctx, out, 0));
     }
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExFilehandleClose(RnCtx* ctx, Value* out, Value* fh){
+    RNFUNC_BEGIN;
     (void)ctx;
     if(fh->type != VT_INT64){
         abort();
     }
     fclose((FILE*)(uintptr_t)fh->value.as_int64);
-    to_bool(ctx, out, 1);
+    RNFUNC_CALL(ctx, to_bool(ctx, out, 1));
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExFilehandleReadEx(RnCtx* ctx, Value* out, Value* fh, Value* bv, Value* offs,
                    Value* len){
+    RNFUNC_BEGIN;
     FILE* fp;
     size_t reqlen;
     size_t readlen;
@@ -2678,12 +2949,14 @@ ExFilehandleReadEx(RnCtx* ctx, Value* out, Value* fh, Value* bv, Value* offs,
 
     fp = (FILE*)(uintptr_t)fh->value.as_int64;
     readlen = fread(bv->value.as_bytevector->buf + poffs, 1, reqlen, fp);
-    RnInt64(ctx, out, readlen);
+    RNFUNC_CALL(ctx, RnInt64(ctx, out, readlen));
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExFilehandleWrite(RnCtx* ctx, Value* out, Value* fh, Value* bv, Value* offs,
                   Value* len){
+    RNFUNC_BEGIN;
     FILE* fp;
     size_t reqlen;
     size_t writelen;
@@ -2708,33 +2981,42 @@ ExFilehandleWrite(RnCtx* ctx, Value* out, Value* fh, Value* bv, Value* offs,
 
     fp = (FILE*)(uintptr_t)fh->value.as_int64;
     writelen = fwrite(bv->value.as_bytevector->buf + poffs, 1, reqlen, fp);
-    RnInt64(ctx, out, writelen);
+    RNFUNC_CALL(ctx, RnInt64(ctx, out, writelen));
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExFilehandleFlush(RnCtx* ctx, Value* out, Value* fh){
+    RNFUNC_BEGIN;
     FILE* fp;
     if(fh->type != VT_INT64){
         abort();
     }
     fp = (FILE*)(uintptr_t)fh->value.as_int64;
     fflush(fp);
-    to_bool(ctx, out, 1);
+    RNFUNC_CALL(ctx, to_bool(ctx, out, 1));
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExFilehandleStdin(RnCtx* ctx, Value* out){
-    RnInt64(ctx, out, (uintptr_t)stdin);
+    RNFUNC_BEGIN;
+    RNFUNC_CALL(ctx, RnInt64(ctx, out, (uintptr_t)stdin));
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExFilehandleStdout(RnCtx* ctx, Value* out){
-    RnInt64(ctx, out, (uintptr_t)stdout);
+    RNFUNC_BEGIN
+    RNFUNC_CALL(ctx, RnInt64(ctx, out, (uintptr_t)stdout));
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExFilehandleStderr(RnCtx* ctx, Value* out){
-    RnInt64(ctx, out, (uintptr_t)stderr);
+    RNFUNC_BEGIN;
+    RNFUNC_CALL(ctx, RnInt64(ctx, out, (uintptr_t)stderr));
+    RNFUNC_END;
 }
 
 /* (vec-copy v start end) => vec */
@@ -2760,8 +3042,9 @@ ExFilehandleStderr(RnCtx* ctx, Value* out){
     x("vec-append", ExVecAppend, _N) \
     x("vec-subvec", ExVecSubvec, _3_1) // FIXME: Remove this
 
-static void
+static RnResult
 sub_string(RnCtx* ctx, Value* out, ObjString* str, size_t start, size_t end){
+    RNFUNC_BEGIN;
     const char* begin;
     const char* tail;
     const char* term;
@@ -2769,11 +3052,13 @@ sub_string(RnCtx* ctx, Value* out, ObjString* str, size_t start, size_t end){
     term = str->str + str->len;
     begin = utf8_skip(str->str, term, start);
     tail = utf8_skip(begin, term, end - start);
-    RnString(ctx, out, begin, tail - begin);
+    RNFUNC_CALL(ctx, RnString(ctx, out, begin, tail - begin));
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExVecCopy(RnCtx* ctx, Value* out, Value* v, Value* start, Value* end){
+    RNFUNC_BEGIN;
     size_t s;
     size_t e;
     if(start->type != VT_INT64){
@@ -2787,10 +3072,10 @@ ExVecCopy(RnCtx* ctx, Value* out, Value* v, Value* start, Value* end){
 
     switch(v->type){
         case VT_STRING:
-            sub_string(ctx, out, v->value.as_string, s, e);
+            RNFUNC_CALL(ctx, sub_string(ctx, out, v->value.as_string, s, e));
             break;
         case VT_BYTEVECTOR:
-            RnBytevector(ctx, out, e - s);
+            RNFUNC_CALL(ctx, RnBytevector(ctx, out, e - s));
             memcpy(out->value.as_bytevector->buf, 
                    v->value.as_bytevector->buf + s,
                    e - s);
@@ -2799,11 +3084,13 @@ ExVecCopy(RnCtx* ctx, Value* out, Value* v, Value* start, Value* end){
             abort();
             break;
     }
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExVecCopyEx(RnCtx* ctx, Value* out, Value* tgt, Value* loc, 
             Value* src, Value* start, Value* end){
+    RNFUNC_BEGIN;
     size_t i,l,s,e;
     uint8_t* f;
     uint8_t* t;
@@ -2827,8 +3114,8 @@ ExVecCopyEx(RnCtx* ctx, Value* out, Value* tgt, Value* loc,
         case VT_VECTOR:
             RnValueLink(ctx, &tmp);
             for(i=0;i!=(e - s);i++){
-                RnVectorRef(ctx, &tmp, src, s + i);
-                RnVectorSet(ctx, tgt, &tmp, l + i);
+                RNFUNC_CALL(ctx, RnVectorRef(ctx, &tmp, src, s + i));
+                RNFUNC_CALL(ctx, RnVectorSet(ctx, tgt, &tmp, l + i));
             }
             RnValueUnlink(ctx, &tmp);
             break;
@@ -2847,11 +3134,13 @@ ExVecCopyEx(RnCtx* ctx, Value* out, Value* tgt, Value* loc,
             abort();
             break;
     }
-    to_bool(ctx, out, 1);
+    RNFUNC_CALL(ctx, to_bool(ctx, out, 1));
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExVecRef(RnCtx* ctx, Value* out, Value* vec, Value* idx){
+    RNFUNC_BEGIN;
     ValueContainer v;
     size_t e;
     const char* ref;
@@ -2883,10 +3172,10 @@ ExVecRef(RnCtx* ctx, Value* out, Value* vec, Value* idx){
             }
             break;
         case VT_SIMPLE_STRUCT:
-            RnVectorRef(ctx, out, vec, e + 1);
+            RNFUNC_CALL(ctx, RnVectorRef(ctx, out, vec, e + 1));
             break;
         case VT_VECTOR:
-            RnVectorRef(ctx, out, vec, e);
+            RNFUNC_CALL(ctx, RnVectorRef(ctx, out, vec, e));
             break;
         case VT_BYTEVECTOR:
             if(e > vec->value.as_bytevector->len){
@@ -2899,10 +3188,12 @@ ExVecRef(RnCtx* ctx, Value* out, Value* vec, Value* idx){
             abort();
             break;
     }
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExVecSetEx(RnCtx* ctx, Value* out, Value* vec, Value* idx, Value* obj){
+    RNFUNC_BEGIN;
     size_t e;
     if(idx->type != VT_INT64){
         abort();
@@ -2919,10 +3210,10 @@ ExVecSetEx(RnCtx* ctx, Value* out, Value* vec, Value* idx, Value* obj){
     e = idx->value.as_int64;
     switch(vec->type){
         case VT_SIMPLE_STRUCT:
-            RnVectorSet(ctx, vec, obj, e + 1);
+            RNFUNC_CALL(ctx, RnVectorSet(ctx, vec, obj, e + 1));
             break;
         case VT_VECTOR:
-            RnVectorSet(ctx, vec, obj, e);
+            RNFUNC_CALL(ctx, RnVectorSet(ctx, vec, obj, e));
             break;
         case VT_BYTEVECTOR:
             if(obj->type != VT_INT64){
@@ -2937,17 +3228,20 @@ ExVecSetEx(RnCtx* ctx, Value* out, Value* vec, Value* idx, Value* obj){
             if(e > vec->value.as_bytevector->len){
                 abort();
             }
-            vec->value.as_bytevector->buf[e] = (unsigned char)obj->value.as_int64;
+            vec->value.as_bytevector->buf[e] = 
+                (unsigned char)obj->value.as_int64;
             break;
         default:
             abort();
             break;
     }
-    to_bool(ctx, out, 1);
+    RNFUNC_CALL(ctx, to_bool(ctx, out, 1));
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExVecNew(RnCtx* ctx, Value* out, Value* tag, Value* k){
+    RNFUNC_BEGIN;
     uint64_t siz;
     if(tag->type != VT_INT64){
         abort();
@@ -2959,23 +3253,25 @@ ExVecNew(RnCtx* ctx, Value* out, Value* tag, Value* k){
 
     switch(tag->value.as_int64){
         case 4:
-            RnVector(ctx, out, siz);
+            RNFUNC_CALL(ctx, RnVector(ctx, out, siz));
             break;
         case 9:
-            RnVector(ctx, out, siz + 1);
+            RNFUNC_CALL(ctx, RnVector(ctx, out, siz + 1));
             out->type = VT_SIMPLE_STRUCT;
             break;
         case 8:
-            RnBytevector(ctx, out, siz);
+            RNFUNC_CALL(ctx, RnBytevector(ctx, out, siz));
             break;
         default:
             abort();
             break;
     }
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExVecLength(RnCtx* ctx, Value* out, Value* vec){
+    RNFUNC_BEGIN;
     size_t len;
     const char* begin;
     const char* end;
@@ -2990,23 +3286,25 @@ ExVecLength(RnCtx* ctx, Value* out, Value* vec){
                 cur = utf8_skip(cur, end, 1);
                 len++;
             }
-            RnInt64(ctx, out, len);
+            RNFUNC_CALL(ctx, RnInt64(ctx, out, len));
             break;
         case VT_VECTOR:
-            RnInt64(ctx, out, vec->value.as_vector->length);
+            RNFUNC_CALL(ctx, RnInt64(ctx, out, vec->value.as_vector->length));
             break;
         case VT_BYTEVECTOR:
-            RnInt64(ctx, out, vec->value.as_bytevector->len);
+            RNFUNC_CALL(ctx, RnInt64(ctx, out, vec->value.as_bytevector->len));
             break;
         default:
             abort();
             break;
     }
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExVecFillEx(RnCtx* ctx, Value* out, Value* vec, Value* obj, 
             Value* from, Value* to){
+    RNFUNC_BEGIN;
     size_t f, t, i;
     if(from->type != VT_INT64){
         abort();
@@ -3028,7 +3326,7 @@ ExVecFillEx(RnCtx* ctx, Value* out, Value* vec, Value* obj,
     switch(vec->type){
         case VT_VECTOR:
             for(i = f; i != t; i++){
-                RnVectorSet(ctx, vec, obj, i);
+                RNFUNC_CALL(ctx, RnVectorSet(ctx, vec, obj, i));
             }
             break;
         case VT_BYTEVECTOR:
@@ -3045,18 +3343,21 @@ ExVecFillEx(RnCtx* ctx, Value* out, Value* vec, Value* obj,
                 abort();
             }
             for(i = f; i != t; i++){
-                vec->value.as_bytevector->buf[i] = (unsigned char)obj->value.as_int64;
+                vec->value.as_bytevector->buf[i] = 
+                    (unsigned char)obj->value.as_int64;
             }
             break;
         default:
             abort();
             break;
     }
-    to_bool(ctx, out, 1);
+    RNFUNC_CALL(ctx, to_bool(ctx, out, 1));
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExVecEq(RnCtx* ctx, Value* out, Value* x, Value* y){
+    RNFUNC_BEGIN;
     if(x->type != y->type){
         abort();
     }
@@ -3064,22 +3365,25 @@ ExVecEq(RnCtx* ctx, Value* out, Value* x, Value* y){
         abort();
     }
     if(x->value.as_string == y->value.as_string){
-        to_bool(ctx, out, 1);
-        return;
+        RNFUNC_CALL(ctx, to_bool(ctx, out, 1));
+        goto finish;
     }
     if(x->value.as_string->len == y->value.as_string->len){
         if(0 == memcmp(x->value.as_string->str,
                        y->value.as_string->str,
                        x->value.as_string->len)){
-            to_bool(ctx, out, 1);
-            return;
+            RNFUNC_CALL(ctx, to_bool(ctx, out, 1));
+            goto finish;
         }
     }
-    to_bool(ctx, out, 0);
+    RNFUNC_CALL(ctx, to_bool(ctx, out, 0));
+finish:
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExVecAppend(RnCtx* ctx, int argc, Value* stack){
+    RNFUNC_BEGIN;
     Value tmp;
     Value tmp2;
     char* s;
@@ -3109,21 +3413,23 @@ ExVecAppend(RnCtx* ctx, int argc, Value* stack){
     /* Pass2: Pop args and generate total string */
     loc = total;
     for(i = 0; i != argc; i++){
-        RnRibRef(ctx, &tmp, stack, 0);
-        RnRibRef(ctx, stack, stack, 1);
+        RNFUNC_CALL(ctx, RnRibRef(ctx, &tmp, stack, 0));
+        RNFUNC_CALL(ctx, RnRibRef(ctx, stack, stack, 1));
         loc -= tmp.value.as_string->len;
         memcpy(&s[loc], tmp.value.as_string->str, tmp.value.as_string->len);
     }
-    RnString(ctx, &tmp, s, total);
+    RNFUNC_CALL(ctx, RnString(ctx, &tmp, s, total));
     free(s);
-    RnCons(ctx, stack, &tmp, stack);
+    RNFUNC_CALL(ctx, RnCons(ctx, stack, &tmp, stack));
     RnValueUnlink(ctx, &tmp);
     RnValueUnlink(ctx, &tmp2);
+    RNFUNC_END;
 }
 
 // FIXME: Remove this
-static void
+static RnResult
 ExVecSubvec(RnCtx* ctx, Value* out, Value* v, Value* start, Value* end){
+    RNFUNC_BEGIN;
     size_t s;
     size_t e;
     if(start->type != VT_INT64){
@@ -3137,10 +3443,10 @@ ExVecSubvec(RnCtx* ctx, Value* out, Value* v, Value* start, Value* end){
 
     switch(v->type){
         case VT_STRING:
-            sub_string(ctx, out, v->value.as_string, s, e);
+            RNFUNC_CALL(ctx, sub_string(ctx, out, v->value.as_string, s, e));
             break;
         case VT_BYTEVECTOR:
-            RnBytevector(ctx, out, e - s);
+            RNFUNC_CALL(ctx, RnBytevector(ctx, out, e - s));
             memcpy(out->value.as_bytevector->buf, 
                    v->value.as_bytevector->buf + s,
                    e - s);
@@ -3149,6 +3455,7 @@ ExVecSubvec(RnCtx* ctx, Value* out, Value* v, Value* start, Value* end){
             abort();
             break;
     }
+    RNFUNC_END;
 }
 
 
@@ -3168,22 +3475,27 @@ ExVecSubvec(RnCtx* ctx, Value* out, Value* v, Value* start, Value* end){
     x("hashtable-keys", ExHtKeys, _1_1) \
     x("hashtable-size", ExHtSize, _1_1)
 
-static void
+static RnResult
 ExHtNew(RnCtx* ctx, Value* out, Value* x){
+    RNFUNC_BEGIN;
     if(x->type != VT_INT64){
         abort();
     }
-    RnHashtable(ctx, out, (HashtableClass) x->value.as_int64);
+    RNFUNC_CALL(ctx, RnHashtable(ctx, out, (HashtableClass)x->value.as_int64));
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExHtSetEx(RnCtx* ctx, Value* out, Value* ht, Value* key, Value* obj){
-    RnHashtableSet(ctx, ht, key, obj);
-    to_bool(ctx, out, 1);
+    RNFUNC_BEGIN;
+    RNFUNC_CALL(ctx, RnHashtableSet(ctx, ht, key, obj));
+    RNFUNC_CALL(ctx, to_bool(ctx, out, 1));
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExHtEntries(RnCtx* ctx, Value* out1, Value* out2, Value* ht){
+    RNFUNC_BEGIN;
     size_t k,i,loc;
     Value tmp;
     ValueType t;
@@ -3196,7 +3508,7 @@ ExHtEntries(RnCtx* ctx, Value* out1, Value* out2, Value* ht){
     k = hto->keycount;
 
     /* Keys */
-    RnVector(ctx, out1, k);
+    RNFUNC_CALL(ctx, RnVector(ctx, out1, k));
     loc = 0;
     for(i=0;i!=ht->value.as_hashtable->containercount;i++){
         if(hto->valuetypes[i] != VT_EMPTY){
@@ -3215,7 +3527,7 @@ ExHtEntries(RnCtx* ctx, Value* out1, Value* out2, Value* ht){
                     break;
             }
             RnValueRef(ctx, &tmp, hto->keys[i], t);
-            RnVectorSet(ctx, out1, &tmp, loc);
+            RNFUNC_CALL(ctx, RnVectorSet(ctx, out1, &tmp, loc));
             loc++;
         }
     }
@@ -3224,12 +3536,12 @@ ExHtEntries(RnCtx* ctx, Value* out1, Value* out2, Value* ht){
     }
 
     /* Values */
-    RnVector(ctx, out2, k);
+    RNFUNC_CALL(ctx, RnVector(ctx, out2, k));
     loc = 0;
     for(i=0;i!=ht->value.as_hashtable->containercount;i++){
         if(hto->valuetypes[i] != VT_EMPTY){
             RnValueRef(ctx, &tmp, hto->values[i], hto->valuetypes[i]);
-            RnVectorSet(ctx, out2, &tmp, loc);
+            RNFUNC_CALL(ctx, RnVectorSet(ctx, out2, &tmp, loc));
             loc++;
         }
     }
@@ -3237,15 +3549,19 @@ ExHtEntries(RnCtx* ctx, Value* out1, Value* out2, Value* ht){
         abort();
     }
     RnValueUnlink(ctx, &tmp);
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExHtRef(RnCtx* ctx, Value* out, Value* ht, Value* key, Value* def){
-    RnHashtableRef(ctx, out, ht, key, def);
+    RNFUNC_BEGIN;
+    RNFUNC_CALL(ctx, RnHashtableRef(ctx, out, ht, key, def));
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExHtKeys(RnCtx* ctx, Value* out, Value* ht){
+    RNFUNC_BEGIN;
     size_t k,i,loc;
     Value tmp;
     ObjHashtable* hto;
@@ -3256,7 +3572,7 @@ ExHtKeys(RnCtx* ctx, Value* out, Value* ht){
     RnValueLink(ctx, &tmp);
     hto = ht->value.as_hashtable;
     k = hto->keycount;
-    RnVector(ctx, out, k);
+    RNFUNC_CALL(ctx, RnVector(ctx, out, k));
     loc = 0;
     for(i=0;i!=ht->value.as_hashtable->containercount;i++){
         if(hto->valuetypes[i] != VT_EMPTY){
@@ -3275,7 +3591,7 @@ ExHtKeys(RnCtx* ctx, Value* out, Value* ht){
                     break;
             }
             RnValueRef(ctx, &tmp, hto->keys[i], t);
-            RnVectorSet(ctx, out, &tmp, loc);
+            RNFUNC_CALL(ctx, RnVectorSet(ctx, out, &tmp, loc));
             loc++;
         }
     }
@@ -3283,14 +3599,17 @@ ExHtKeys(RnCtx* ctx, Value* out, Value* ht){
         abort();
     }
     RnValueUnlink(ctx, &tmp);
+    RNFUNC_END;
 }
 
-static void
+static RnResult
 ExHtSize(RnCtx* ctx, Value* out, Value* ht){
+    RNFUNC_BEGIN;
     if(ht->type != VT_HASHTABLE){
         abort();
     }
-    RnInt64(ctx, out, ht->value.as_hashtable->keycount);
+    RNFUNC_CALL(ctx, RnInt64(ctx, out, ht->value.as_hashtable->keycount));
+    RNFUNC_END;
 }
 
 #define EXFUN(nam, fn) {nam, sizeof(nam) - 1, fn}
