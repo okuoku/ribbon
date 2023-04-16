@@ -165,7 +165,9 @@ typedef enum RnResult_e RnResult;
 
 typedef RnResult (*RnVmExFunc)(RnCtx* ctx, int argc, Value* stack);
 
-#ifndef _MSC_VER
+#ifdef _MSC_VER
+#define RNFUNC_LABEL_ATTRIBUTE
+#else
 #define RNFUNC_LABEL_ATTRIBUTE __attribute__((unused))
 #endif
 
