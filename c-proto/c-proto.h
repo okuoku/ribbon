@@ -141,6 +141,7 @@ typedef struct Value_s Value;
 
 struct RnCtx_s { /* Ribbon Context */
     Value ctx_root;
+    Value raise_proc;
     Value* current_frame;
     ObjHeader gcroot;
 

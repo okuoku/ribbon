@@ -1523,6 +1523,7 @@ RnCtxInit(RnCtx* newctx){
     RnValueLink(newctx, &newctx->ht_macro);
     RnValueLink(newctx, &newctx->bootstrap);
     RnValueLink(newctx, &newctx->args);
+    RnValueLink(newctx, &newctx->raise_proc);
 
     RnHashtable(newctx, &newctx->ht_global, HTC_STRING_HASHTABLE);
 }
@@ -2066,21 +2067,35 @@ call_apply_values(RnCtx* ctx, struct vmstate_s* state){
     RnValueUnlink(ctx, &trampoline);
 }
 
-static void
+static int /* Continue? */
 call_vm_exit(RnCtx* ctx, struct vmstate_s* state){
-    RnRibRef(ctx, &state->result, &state->stack, 0);
+    int mode;
+    int r = 0;
+    Value arg;
+    Value modeval;
+    RnValueLink(ctx, &arg);
+    RnValueLink(ctx, &modeval);
+    RnRibRef(ctx, &arg, &state->stack, 0);
     RnRibRef(ctx, &state->stack, &state->stack, 1);
-    if(state->stack.type != VT_RIB){
+    RnRibRef(ctx, &modeval, &state->stack, 0);
+    RnRibRef(ctx, &state->stack, &state->stack, 1);
+    if(modeval.type != VT_INT64){
         abort();
     }
-    if(state->stack.value.as_rib->type[0] != VT_INT64){
-        abort();
-    }
-    state->exit_mode = (int)state->stack.value.as_rib->field[0].as_int64;
-    if(state->exit_mode == 1){
+    mode = (int)modeval.value.as_int64;
+    if(mode == 1){ /* Scheme exit */
+        state->exit_mode = mode;
         // FIXME: Raise it instead
-        exit((int)state->result.value.as_int64);
+        exit((int)arg.value.as_int64);
+    }else if(mode == 3){ /* Set raise proc */
+        r = 1; /* continue */
+        RnValueRef(ctx, &ctx->raise_proc, arg.value, arg.type);
+    }else{ /* eval exit */
+        RnValueRef(ctx, &state->result, arg.value, arg.type);
     }
+    RnValueUnlink(ctx, &arg);
+    RnValueUnlink(ctx, &modeval);
+    return r;
 }
 
 static void
@@ -2097,8 +2112,7 @@ call_primitive(RnCtx* ctx, struct vmstate_s* state,
         case 2: /* internal primitives */
             switch(ident){
                 case 1: /* $vm-exit */
-                    r = 0;
-                    call_vm_exit(ctx, state);
+                    r = call_vm_exit(ctx, state);
                     break;
                 case 2: /* apply-values */
                     call_apply_values(ctx, state);

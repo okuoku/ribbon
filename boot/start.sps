@@ -79,6 +79,12 @@
    (write (list 'SAVING... source '=> bootstrapsave)) (newline)
    (close-port p)))
 
+;; Initialize VM
+
+($vm-exit 3 raise)
+
+;; Initialize runtime environment
+
 (write (list 'ARGS: *command-line*)) (newline)
 
 (consume-arguments!)
