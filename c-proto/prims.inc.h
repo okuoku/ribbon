@@ -3252,6 +3252,13 @@ ExVecNew(RnCtx* ctx, Value* out, Value* tag, Value* k){
     siz = k->value.as_int64;
 
     switch(tag->value.as_int64){
+        case 3:
+            if(siz == 0){
+                RNFUNC_CALL(ctx, RnString(ctx, out, "", 0));
+            }else{
+                abort();
+            }
+            break;
         case 4:
             RNFUNC_CALL(ctx, RnVector(ctx, out, siz));
             break;
