@@ -66,11 +66,11 @@ set(negativetestsrcs
     ${tests}/err/fail8.sps
     )
 
-set(excludes 
+set(excludes
     # FIXME: Currently, C/CXX would abort() for any error. Skip these tests.
-    qq0 app sibr0010string sibr0010vector sibr0011 sibr0012gen
+    app sibr0010string sibr0010vector sibr0011 sibr0012gen
     sibr0013 sibr0014
-    fail1 fail3 fail4 fail5 fail6 fail8)
+    fail1)
 
 foreach(e ${excludes})
     set(exclude_C-${e} ON)

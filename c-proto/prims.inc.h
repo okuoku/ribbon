@@ -1663,7 +1663,7 @@ ExErrorCore(RnCtx* ctx, int argc, Value* stack){
         fprintf(stderr, "BROKEN STACK!\n");
         emergency_print(ctx, stack);
     }
-    abort();
+    exit(1);
     RNFUNC_END;
 }
 
