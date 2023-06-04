@@ -30,25 +30,25 @@ set(testsrcs
     ${tests}/lib/minitest0.sps
     ${tests}/lib/yuniio0.sps
     ${tests}/lib/yuniio1.sps
+    ${tests}/sibr/sibr0010string.sps
+    ${tests}/sibr/sibr0010vector.sps
+    ${tests}/sibr/sibr0011.sps
+    ${tests}/sibr/sibr0012gen.sps
+    ${tests}/sibr/sibr0014.sps
     ${tests}/sibr/err-sibr0012string.sps
     ${tests}/sibr/err-sibr0014.sps
     )
 
 set(negativetestsrcs
+    # SIBR0013
+    ${tests}/scheme/inexact3.sps 
+    ${tests}/sibr/sibr0013.sps
+
     # Run phase
-    ${tests}/scheme/inexact3.sps # SIBR0013
     ${tests}/scheme/qq0.sps # ???
 
     # Expand phase
     ${tests}/app/basic/app.sps # lib ?
-
-    # Not ported yet
-    ${tests}/sibr/sibr0010string.sps
-    ${tests}/sibr/sibr0010vector.sps
-    ${tests}/sibr/sibr0011.sps
-    ${tests}/sibr/sibr0012gen.sps
-    ${tests}/sibr/sibr0013.sps
-    ${tests}/sibr/sibr0014.sps
 
     # fake syntax-rules
     ${tests}/scheme/synrule0.sps
@@ -68,9 +68,7 @@ set(negativetestsrcs
 
 set(excludes
     # FIXME: Currently, C/CXX would abort() for any error. Skip these tests.
-    app sibr0010string sibr0010vector sibr0011 sibr0012gen
-    sibr0013 sibr0014
-    fail1)
+    app fail1)
 
 foreach(e ${excludes})
     set(exclude_C-${e} ON)
