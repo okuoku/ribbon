@@ -77,9 +77,15 @@ endforeach()
 
 function(add_c_test nam fil turnfail)
     foreach(lang C CXX)
+        if(lang STREQUAL C)
+            set(tgt proto)
+        else()
+            set(tgt protoxx)
+        endif()
         if(NOT exclude_${lang}-${nam})
             add_test(NAME ${lang}-${nam}
-                COMMAND proto
+                COMMAND ${tgt}
+                -libpath ${tests}/app/basic
                 ${fil})
             set_tests_properties(${lang}-${nam}
                 PROPERTIES WILL_FAIL ${turnfail})
