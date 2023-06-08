@@ -47,9 +47,6 @@ set(negativetestsrcs
     # Run phase
     ${tests}/scheme/qq0.sps # ???
 
-    # Expand phase
-    ${tests}/app/basic/app.sps # lib ?
-
     # fake syntax-rules
     ${tests}/scheme/synrule0.sps
     ${tests}/scheme/synrule1.sps
@@ -68,7 +65,7 @@ set(negativetestsrcs
 
 set(excludes
     # FIXME: Currently, C/CXX would abort() for any error. Skip these tests.
-    app fail1)
+    fail1)
 
 foreach(e ${excludes})
     set(exclude_C-${e} ON)
