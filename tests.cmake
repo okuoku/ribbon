@@ -63,9 +63,7 @@ set(negativetestsrcs
     ${tests}/err/fail8.sps
     )
 
-set(excludes
-    # FIXME: Currently, C/CXX would abort() for any error. Skip these tests.
-    fail1)
+set(excludes)
 
 foreach(e ${excludes})
     set(exclude_C-${e} ON)
