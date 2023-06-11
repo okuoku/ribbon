@@ -2488,17 +2488,35 @@ ExFxExpt(RnCtx* ctx, Value* out, Value* x, Value* y){
 static RnResult
 ExFxFloorDiv(RnCtx* ctx, Value* out1, Value* out2, Value* x, Value* y){
     RNFUNC_BEGIN;
-    int64_t r1;
-    int64_t r2;
-    // FIXME: Implement this
+    int64_t v1,v2;
+    int64_t r1,r2;
     if(x->type != VT_INT64){
         abort();
     }
     if(y->type != VT_INT64){
         abort();
     }
-    r1 = x->value.as_int64 / y->value.as_int64;
-    r2 = x->value.as_int64 % y->value.as_int64;
+    v1 = x->value.as_int64;
+    v2 = y->value.as_int64;
+    if((v1 >= 0 && v2 >= 0) || (v1 < 0 && v2 < 0)){
+        r1 = v1 / v2;
+        r2 = v1 % v2;
+    }else{
+        /* Calc modulus first, adjust its sign */
+        r2 = v1 % v2;
+        if(r2 < 0){
+            if(v2 >= 0){
+                r2 = r2 * -1;
+            }
+        }else{
+            if(v2 < 0){
+                r2 = r2 * -1;
+            }
+        }
+        /* Adjust v1 and calc truncate-quotient against it */
+        v1 = v1 - r2;
+        r1 = v1 / v2;
+    }
     RNFUNC_CALL(ctx, RnInt64(ctx, out1, r1));
     RNFUNC_CALL(ctx, RnInt64(ctx, out2, r2));
     RNFUNC_END;
