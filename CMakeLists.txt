@@ -112,4 +112,6 @@ brand(protoxx)
 
 # Tests
 
-include(${CMAKE_CURRENT_LIST_DIR}/tests.cmake)
+if(NOT RIBBON_SKIP_TESTS)
+    include(${CMAKE_CURRENT_LIST_DIR}/tests.cmake)
+endif()
