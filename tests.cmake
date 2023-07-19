@@ -30,6 +30,10 @@ set(testsrcs
     ${tests}/lib/minitest0.sps
     ${tests}/lib/yuniio0.sps
     ${tests}/lib/yuniio1.sps
+    )
+
+set(ribbontestsrcs
+    # Don't run SIBR test on Ribbon-on-Scheme
     ${tests}/sibr/sibr0010string.sps
     ${tests}/sibr/sibr0010vector.sps
     ${tests}/sibr/sibr0011.sps
@@ -126,8 +130,13 @@ foreach(f ${testsrcs})
     add_any_test(${nam} ${f} FALSE)
 endforeach()
 
+foreach(f ${ribbontestsrcs})
+    get_filename_component(nam ${f} NAME_WE)
+    add_c_test(${nam} ${f} FALSE)
+endforeach()
+
 foreach(f ${negativetestsrcs})
     get_filename_component(nam ${f} NAME_WE)
-    add_any_test(${nam} ${f} TRUE)
+    add_c_test(${nam} ${f} TRUE)
 endforeach()
 
