@@ -2547,8 +2547,9 @@ main(int ac, char** av){
     FILE* bin;
     int i,argstart;
     uint8_t* bootstrap;
-    long binsize;
+    size_t binsize, readsize;
     Value str;
+    int r = 0;
 
     RnCtx ctx;
     RnCtxInit(&ctx);
@@ -2591,8 +2592,16 @@ main(int ac, char** av){
     if(! bootstrap){
         RnLowMemory();
     }
-    fread(bootstrap, binsize, 1, bin);
+
+    clearerr(bin);
+    readsize = fread(bootstrap, binsize, 1, bin);
+    if(readsize != binsize){
+        r = ferror(bin);
+    }
     fclose(bin);
+    if(r != 0){
+        goto term;
+    }
 
     /* Run bootstrap */
     load_bootstrap(&ctx, bootstrap);
@@ -2600,6 +2609,8 @@ main(int ac, char** av){
     parse_bootstrap(&ctx);
     run_bootstrap(&ctx);
 
+term:
+    free(bootstrap);
     // FIXME: Deinit context here
 
     return 0;
