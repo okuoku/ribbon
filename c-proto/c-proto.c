@@ -7,7 +7,6 @@
 #include <stdlib.h>
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>
-#include <stdio.h>
 #include <string.h>
 #include <math.h>
 
@@ -31,6 +30,9 @@ RnLowMemory(void){
     abort();
 }
 
+#include <stdarg.h>
+#define debugprintf BsDebugPrintf
+
 /* Standard Bootstrap handler implementation */
 void* BsFileOpenForRead(const char* path);
 void* BsFileOpenForReadWrite(const char* path);
@@ -42,7 +44,14 @@ void BsFileFlush(void* handle);
 void* BsFileGetStdin(void);
 void* BsFileGetStdout(void);
 void* BsFileGetStderr(void);
+#ifdef __GNUC__
+#define PRINTF __attribute__((format(printf,1,2)))
+#else
+#define PRINTF
+#endif
+void BsDebugPrintf(const char* fmt, ...) PRINTF;
 
+#include <stdio.h>
 void*
 BsFileOpenForRead(const char* path){
     return (void*)fopen(path, "rb");
@@ -122,6 +131,14 @@ BsFileGetStdout(void){
 void*
 BsFileGetStderr(void){
     return (void*)stderr;
+}
+
+void
+BsDebugPrintf(const char* fmt, ...){
+    va_list ap;
+    va_start(ap, fmt);
+    (void)vfprintf(stderr, fmt, ap);
+    va_end(ap);
 }
 
 
@@ -1759,22 +1776,22 @@ load_bootstrap(RnCtx* ctx, const uint8_t* bin){
         switch(proto){
             case 1: /* Positive integer */
                 val = get_leb128(&p);
-                //printf("Exact: [%ld]\n", val);
+                //debugprintf("Exact: [%ld]\n", val);
                 RnInt64(ctx, &v[cur+i], val);
                 break;
             case 2: /* Negative integer */
                 val = (int64_t)0 - get_leb128(&p);
-                //printf("Exact: [%ld]\n", val);
+                //debugprintf("Exact: [%ld]\n", val);
                 RnInt64(ctx, &v[cur+i], val);
                 break;
             case 3: /* Scheme number */
                 num = get_cstr(&p);
                 d = strtod(num, NULL);
                 if(d == 0){
-                    printf("FIXME: [%s] yielded exact zero?\n", num);
+                    debugprintf("FIXME: [%s] yielded exact zero?\n", num);
                     RnInt64(ctx, &v[cur+i], 0);
                 }else{
-                    //printf("Inexact: [%s]\n", num);
+                    //debugprintf("Inexact: [%s]\n", num);
                     RnDouble(ctx, &v[cur+i], d);
                 }
                 free(num);
@@ -1794,7 +1811,7 @@ load_bootstrap(RnCtx* ctx, const uint8_t* bin){
         RnUninternedSymbol(ctx, &sym, &symnam);
         RnHashtableRef(ctx, &tmp, &ctx->ht_global, &symnam, &sym);
         if(tmp.value.as_rib == sym.value.as_rib){
-            //printf("Symbol = [%s] => %p\n", nam, (void*)sym.value.as_rib);
+            //debugprintf("Symbol = [%s] => %p\n", nam, (void*)sym.value.as_rib);
             RnHashtableSet(ctx, &ctx->ht_global, &symnam, &sym);
         }
         free(nam);
@@ -1883,81 +1900,81 @@ emergency_print(RnCtx* ctx, Value* v){
     RnValueLink(ctx, &tmp);
     switch(v->type){
         case VT_EMPTY:
-            fprintf(stderr, "[EMPTY]");
+            debugprintf("[EMPTY]");
             break;
         case VT_ZONE0:
             switch(v->value.as_zone0){
                 case ZZ_NIL:
-                    fprintf(stderr, "[NIL]");
+                    debugprintf("[NIL]");
                     break;
                 case ZZ_TRUE:
-                    fprintf(stderr, "#t");
+                    debugprintf("#t");
                     break;
                 case ZZ_FALSE:
-                    fprintf(stderr, "#f");
+                    debugprintf("#f");
                     break;
                 case ZZ_EOF_OBJECT:
-                    fprintf(stderr, "#<eof-object>");
+                    debugprintf("#<eof-object>");
                     break;
                 default:
-                    fprintf(stderr, "[ZZ:%d]",(int)v->value.as_zone0);
+                    debugprintf("[ZZ:%d]",(int)v->value.as_zone0);
                     break;
             }
             break;
         case VT_INT64:
-            fprintf(stderr, "%" PRId64, v->value.as_int64);
+            debugprintf("%" PRId64, v->value.as_int64);
             break;
         case VT_DOUBLE:
-            fprintf(stderr, "%f", v->value.as_double);
+            debugprintf("%f", v->value.as_double);
             break;
         case VT_CHAR:
             // FIXME: UTF8
-            fprintf(stderr, "%c", v->value.as_char);
+            debugprintf("%c", v->value.as_char);
             break;
         case VT_RIB:
             if(v->value.as_rib->type[2] == VT_INT64 &&
                v->value.as_rib->field[2].as_int64 == 1){
-                fprintf(stderr, "#<procedure>");
+                debugprintf("#<procedure>");
             }else{
-                fprintf(stderr, "#<");
+                debugprintf("#<");
                 RnRibRef(ctx, &tmp, v, 0);
                 emergency_print(ctx, &tmp);
-                fprintf(stderr, " ");
+                debugprintf(" ");
                 RnRibRef(ctx, &tmp, v, 1);
                 emergency_print(ctx, &tmp);
-                fprintf(stderr, " ");
+                debugprintf(" ");
                 RnRibRef(ctx, &tmp, v, 2);
                 emergency_print(ctx, &tmp);
-                fprintf(stderr, ">");
+                debugprintf(">");
             }
             break;
         case VT_VECTOR:
         case VT_SIMPLE_STRUCT:
             for(i=0;i!=v->value.as_vector->length;i++){
                 if(i==0){
-                    fprintf(stderr, "#(");
+                    debugprintf("#(");
                 }else{
-                    fprintf(stderr, " ");
+                    debugprintf(" ");
                 }
                 RnVectorRef(ctx, &tmp, v, i);
                 emergency_print(ctx, &tmp);
             }
-            fprintf(stderr, ")");
+            debugprintf(")");
             break;
         case VT_HASHTABLE:
-            fprintf(stderr, "#<HASHTABLE>");
+            debugprintf("#<HASHTABLE>");
             break;
         case VT_STRING:
-            fprintf(stderr, "\"%s\"", v->value.as_string->str);
+            debugprintf("\"%s\"", v->value.as_string->str);
             break;
         case VT_BYTEVECTOR:
-            fprintf(stderr, "#<BYTEVECTOR>");
+            debugprintf("#<BYTEVECTOR>");
             break;
         case VT_ROOT:
-            fprintf(stderr, "#<ROOT>");
+            debugprintf("#<ROOT>");
             break;
         default:
-            fprintf(stderr, "#<UNKNOWN:%d>", (int)v->type);
+            debugprintf("#<UNKNOWN:%d>", (int)v->type);
             break;
 
     }
@@ -2043,24 +2060,24 @@ call_lambda(RnCtx* ctx, struct vmstate_s* state){
     /* Construct rest argument on acc */
     RnZone0(ctx, &acc, ZZ_NIL);
 #ifdef TRACE
-    fprintf(stderr, "vals = %d, layout = %zd, argnc = %zd, nargs = %zd\n", 
+    debugprintf("vals = %d, layout = %zd, argnc = %zd, nargs = %zd\n", 
             state->vals, layout, argnc, nargs);
 #endif
     for(res = argnc; res != 0; res--){
         RnRibRef(ctx, &tmp, &state->stack, 0);
         /*
-        fprintf(stderr, "PUSHr:\n");
+        debugprintf("PUSHr:\n");
         emergency_print(ctx, &acc);
-        fprintf(stderr, "\n");
+        debugprintf("\n");
         */
         RnRibRef(ctx, &state->stack, &state->stack, 1);
         RnCons(ctx, &acc, &tmp, &acc);
     }
     if(layout < 0){
 #ifdef TRACE
-        fprintf(stderr, "PUSHc:\n");
+        debugprintf("PUSHc:\n");
         emergency_print(ctx, &acc);
-        fprintf(stderr, "\n");
+        debugprintf("\n");
 #endif
         /* Push rest aguments as a list if required */
         RnCons(ctx, &state->stack, &acc, &state->stack);
@@ -2070,17 +2087,17 @@ call_lambda(RnCtx* ctx, struct vmstate_s* state){
     for(res = nargs; res != 0; res--){
         RnRibRef(ctx, &tmp, &state->stack, 0);
 #ifdef TRACE
-        fprintf(stderr, "PUSHa:\n");
+        debugprintf("PUSHa:\n");
         emergency_print(ctx, &tmp);
-        fprintf(stderr, "\n");
+        debugprintf("\n");
 #endif
         RnRibRef(ctx, &state->stack, &state->stack, 1);
         RnCons(ctx, &acc, &tmp, &acc);
     }
 #ifdef TRACE
-    fprintf(stderr, "STA:\n");
+    debugprintf("STA:\n");
     emergency_print(ctx, &acc);
-    fprintf(stderr, "\n");
+    debugprintf("\n");
 #endif
     /* Check if tail call */
     if(state->pc.type == VT_RIB){
@@ -2100,9 +2117,9 @@ call_lambda(RnCtx* ctx, struct vmstate_s* state){
     RnRibRef(ctx, &state->pc, &state->opnd, 2);
     RnValueRef(ctx, &state->stack, acc.value, acc.type);
     /*
-    fprintf(stderr, "ST:\n");
+    debugprintf("ST:\n");
     emergency_print(ctx, &state->stack);
-    fprintf(stderr, "\n");
+    debugprintf("\n");
     */
     RnValueUnlink(ctx, &acc);
     RnValueUnlink(ctx, &tmp);
@@ -2143,9 +2160,9 @@ call_apply_values(RnCtx* ctx, struct vmstate_s* state){
             RnRibRef(ctx, &state->reg, &values, 0);
             RnRibRef(ctx, &values, &values, 1);
 #ifdef TRACE
-            fprintf(stderr, "ARG(%d):\n", vals);
+            debugprintf("ARG(%d):\n", vals);
             emergency_print(ctx, &state->reg);
-            fprintf(stderr, "\n");
+            debugprintf("\n");
 #endif
             RnCons(ctx, &state->stack, &state->reg, &state->stack);
             vals ++;
@@ -2259,7 +2276,7 @@ vmstep(RnCtx* ctx, struct vmstate_s* state){
     r = 1; /* Continue by default */
 
 #ifdef TRACE
-    printf("op = %ld\n", inst);
+    debugprintf("op = %ld\n", inst);
 #endif
     
     switch(inst){
@@ -2327,9 +2344,9 @@ vmstep(RnCtx* ctx, struct vmstate_s* state){
             state->vals = -1;
             RnCons(ctx, &state->stack, &state->opnd, &state->stack);
 #ifdef TRACE
-            fprintf(stderr, "Const: ");
+            debugprintf("Const: ");
             emergency_print(ctx, &state->opnd);
-            fprintf(stderr, "\n");
+            debugprintf("\n");
 #endif
             break;
         default: /* Term */

@@ -16,7 +16,7 @@ ExCall_0_1(ExArg_0_1 func, RnCtx* ctx, int argc, Value* stack){
     RNFUNC_BEGIN;
     Value out[1];
     if(argc != 0){
-        fprintf(stderr, "Invalid argument count %d (expected %d)\n",
+        debugprintf("Invalid argument count %d (expected %d)\n",
                 argc, 0);
         abort();
     }
@@ -33,7 +33,7 @@ ExCall_1_1(ExArg_1_1 func, RnCtx* ctx, int argc, Value* stack){
     Value arg[1];
     Value out[1];
     if(argc != 1){
-        fprintf(stderr, "Invalid argument count %d (expected %d)\n",
+        debugprintf("Invalid argument count %d (expected %d)\n",
                 argc, 1);
         abort();
     }
@@ -58,7 +58,7 @@ ExCall_1_2(ExArg_1_2 func, RnCtx* ctx, int argc, Value* stack){
     Value arg[1];
     Value out[2];
     if(argc != 1){
-        fprintf(stderr, "Invalid argument count %d (expected %d)\n",
+        debugprintf("Invalid argument count %d (expected %d)\n",
                 argc, 1);
         abort();
     }
@@ -95,7 +95,7 @@ ExCall_2_1(ExArg_2_1 func, RnCtx* ctx, int argc, Value* stack){
     Value arg[2];
     Value out[1];
     if(argc != 2){
-        fprintf(stderr, "Invalid argument count %d (expected %d)\n",
+        debugprintf("Invalid argument count %d (expected %d)\n",
                 argc, 2);
         abort();
     }
@@ -124,7 +124,7 @@ ExCall_2_2(ExArg_2_2 func, RnCtx* ctx, int argc, Value* stack){
     Value arg[2];
     Value out[2];
     if(argc != 2){
-        fprintf(stderr, "Invalid argument count %d (expected %d)\n",
+        debugprintf("Invalid argument count %d (expected %d)\n",
                 argc, 2);
         abort();
     }
@@ -165,7 +165,7 @@ ExCall_3_1(ExArg_3_1 func, RnCtx* ctx, int argc, Value* stack){
     Value arg[3];
     Value out[1];
     if(argc != 3){
-        fprintf(stderr, "Invalid argument count %d (expected %d)\n",
+        debugprintf("Invalid argument count %d (expected %d)\n",
                 argc, 3);
         abort();
     }
@@ -194,7 +194,7 @@ ExCall_4_1(ExArg_4_1 func, RnCtx* ctx, int argc, Value* stack){
     Value arg[4];
     Value out[1];
     if(argc != 4){
-        fprintf(stderr, "Invalid argument count %d (expected %d)\n",
+        debugprintf("Invalid argument count %d (expected %d)\n",
                 argc, 4);
         abort();
     }
@@ -227,7 +227,7 @@ ExCall_5_1(ExArg_5_1 func, RnCtx* ctx, int argc, Value* stack){
     Value arg[5];
     Value out[1];
     if(argc != 5){
-        fprintf(stderr, "Invalid argument count %d (expected %d)\n",
+        debugprintf("Invalid argument count %d (expected %d)\n",
                 argc, 5);
         abort();
     }
@@ -1642,25 +1642,25 @@ ExErrorCore(RnCtx* ctx, int argc, Value* stack){
     Value tmp, tmp2;
     RnValueLink(ctx, &tmp);
     RnValueLink(ctx, &tmp2);
-    fprintf(stderr, "Error:\n");
+    debugprintf("Error:\n");
     if(argc<0){
         argc=0;
     }
     if(stack->type == VT_RIB){
         RnValueRef(ctx, &tmp, stack->value, stack->type);
         for(i=0;i!=argc;i++){
-            fprintf(stderr, "  %d: ", i);
+            debugprintf("  %d: ", i);
             if(tmp.type != VT_RIB){
-                fprintf(stderr, "BROKEN\n");
+                debugprintf("BROKEN\n");
                 break;
             }
             RNFUNC_CALL(ctx, RnRibRef(ctx, &tmp2, &tmp, 0));
             emergency_print(ctx, &tmp2);
-            fprintf(stderr, "\n");
+            debugprintf("\n");
             RNFUNC_CALL(ctx, RnRibRef(ctx, &tmp, &tmp, 1));
         }
     }else{
-        fprintf(stderr, "BROKEN STACK!\n");
+        debugprintf("BROKEN STACK!\n");
         emergency_print(ctx, stack);
     }
     exit(1);
