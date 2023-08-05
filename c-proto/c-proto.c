@@ -31,6 +31,102 @@ RnLowMemory(void){
     abort();
 }
 
+/* Standard Bootstrap handler implementation */
+void* BsFileOpenForRead(const char* path);
+void* BsFileOpenForReadWrite(const char* path);
+void* BsFileReadAll(const char* path); /* => malloc'ed region */
+void BsFileClose(void* handle);
+int BsFileRead(void* handle, void* buf, size_t buflen, size_t* outlen);
+int BsFileWrite(void* handle, void* buf, size_t buflen, size_t* outlen);
+void BsFileFlush(void* handle);
+void* BsFileGetStdin(void);
+void* BsFileGetStdout(void);
+void* BsFileGetStderr(void);
+
+void*
+BsFileOpenForRead(const char* path){
+    return (void*)fopen(path, "rb");
+}
+
+void*
+BsFileOpenForReadWrite(const char* path){
+    return (void*)fopen(path, "w+b");
+}
+
+void*
+BsFileReadAll(const char* path){
+    FILE* fp;
+    size_t binsize, readsize;
+    void* out;
+
+    fp = fopen(path, "rb");
+
+    /* FIXME: This isn't portable */
+    fseek(fp, 0, SEEK_END);
+    binsize = ftell(fp);
+    fseek(fp, 0, SEEK_SET);
+    out = malloc(binsize);
+    if(! out){
+        RnLowMemory();
+    }
+
+    readsize = fread(out, 1, binsize, fp);
+    if(readsize != binsize){
+        RnPanic();
+    }
+    fclose(fp);
+    return out;
+}
+
+void
+BsFileClose(void* handle){
+    FILE* fp = (FILE*)handle;
+    fclose(fp);
+}
+
+int
+BsFileRead(void* handle, void* buf, size_t buflen, size_t* outlen){
+    FILE* fp = (FILE*)handle;
+    size_t readlen;
+
+    readlen = fread(buf, 1, buflen, fp);
+    *outlen = readlen;
+    return 0;
+}
+
+int
+BsFileWrite(void* handle, void* buf, size_t buflen, size_t* outlen){
+    FILE* fp = (FILE*)handle;
+    size_t writelen;
+    writelen = fwrite(buf, 1, buflen, fp);
+    *outlen = writelen;
+    return 0;
+}
+
+void
+BsFileFlush(void* handle){
+    FILE* fp = (FILE*)handle;
+    fflush(fp);
+}
+
+void*
+BsFileGetStdin(void){
+    return (void*)stdin;
+}
+
+void*
+BsFileGetStdout(void){
+    return (void*)stdout;
+}
+
+void*
+BsFileGetStderr(void){
+    return (void*)stderr;
+}
+
+
+
+
 /* GC */
 
 static void RnDestroyRib(RnCtx* ctx, ObjRib* rib);
@@ -2544,12 +2640,9 @@ static const char* bootfile = BUILDROOT "/dump.bin";
 
 int
 main(int ac, char** av){
-    FILE* bin;
     int i,argstart;
     uint8_t* bootstrap;
-    size_t binsize, readsize;
     Value str;
-    int r = 0;
 
     RnCtx ctx;
     RnCtxInit(&ctx);
@@ -2581,27 +2674,7 @@ main(int ac, char** av){
     RnValueUnlink(&ctx, &str);
 
     /* Load bootfile */
-    bin = fopen(bootfile, "rb");
-    if(! bin){
-        RnPanic();
-    }
-    fseek(bin, 0, SEEK_END);
-    binsize = ftell(bin);
-    fseek(bin, 0, SEEK_SET);
-    bootstrap = (uint8_t*)malloc(binsize);
-    if(! bootstrap){
-        RnLowMemory();
-    }
-
-    clearerr(bin);
-    readsize = fread(bootstrap, binsize, 1, bin);
-    if(readsize != binsize){
-        r = ferror(bin);
-    }
-    fclose(bin);
-    if(r != 0){
-        goto term;
-    }
+    bootstrap = (uint8_t*)BsFileReadAll(bootfile);
 
     /* Run bootstrap */
     load_bootstrap(&ctx, bootstrap);
@@ -2609,7 +2682,6 @@ main(int ac, char** av){
     parse_bootstrap(&ctx);
     run_bootstrap(&ctx);
 
-term:
     free(bootstrap);
     // FIXME: Deinit context here
 

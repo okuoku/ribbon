@@ -2865,15 +2865,16 @@ ExFlTruncateDiv(RnCtx* ctx, Value* out1, Value* out2, Value* x, Value* y){
 static RnResult
 ExFileExistsP(RnCtx* ctx, Value* out, Value* str){
     RNFUNC_BEGIN;
-    FILE* fp;
+    void* handle;
     int r;
     if(str->type != VT_STRING){
         abort();
     }
-    fp = fopen(str->value.as_string->str, "rb");
-    if(fp){
+    handle = BsFileOpenForRead(str->value.as_string->str);
+
+    if(handle){
         r = 1;
-        fclose(fp);
+        BsFileClose(handle);
     }else{
         r = 0;
     }
@@ -2897,13 +2898,13 @@ static RnResult
 ExFilehandleOpenInput(RnCtx* ctx, Value* out, Value* str){
     RNFUNC_BEGIN;
     // FIXME: Provide some destructor
-    FILE* fp;
+    void* handle;
     if(str->type != VT_STRING){
         abort();
     }
-    fp = fopen(str->value.as_string->str, "rb");
-    if(fp){
-        RNFUNC_CALL(ctx, RnInt64(ctx, out, (uintptr_t)fp));
+    handle = BsFileOpenForRead(str->value.as_string->str);
+    if(handle){
+        RNFUNC_CALL(ctx, RnInt64(ctx, out, (uintptr_t)handle));
     }else{
         RNFUNC_CALL(ctx, to_bool(ctx, out, 0));
     }
@@ -2914,13 +2915,13 @@ static RnResult
 ExFilehandleOpenOutput(RnCtx* ctx, Value* out, Value* str){
     RNFUNC_BEGIN;
     // FIXME: Provide some destructor
-    FILE* fp;
+    void* handle;
     if(str->type != VT_STRING){
         abort();
     }
-    fp = fopen(str->value.as_string->str, "wb");
-    if(fp){
-        RNFUNC_CALL(ctx, RnInt64(ctx, out, (uintptr_t)fp));
+    handle = BsFileOpenForReadWrite(str->value.as_string->str);
+    if(handle){
+        RNFUNC_CALL(ctx, RnInt64(ctx, out, (uintptr_t)handle));
     }else{
         RNFUNC_CALL(ctx, to_bool(ctx, out, 0));
     }
@@ -2934,7 +2935,7 @@ ExFilehandleClose(RnCtx* ctx, Value* out, Value* fh){
     if(fh->type != VT_INT64){
         abort();
     }
-    fclose((FILE*)(uintptr_t)fh->value.as_int64);
+    BsFileClose((void*)(uintptr_t)fh->value.as_int64);
     RNFUNC_CALL(ctx, to_bool(ctx, out, 1));
     RNFUNC_END;
 }
@@ -2943,7 +2944,7 @@ static RnResult
 ExFilehandleReadEx(RnCtx* ctx, Value* out, Value* fh, Value* bv, Value* offs,
                    Value* len){
     RNFUNC_BEGIN;
-    FILE* fp;
+    void* handle;
     size_t reqlen;
     size_t readlen;
     size_t poffs;
@@ -2965,8 +2966,9 @@ ExFilehandleReadEx(RnCtx* ctx, Value* out, Value* fh, Value* bv, Value* offs,
         abort();
     }
 
-    fp = (FILE*)(uintptr_t)fh->value.as_int64;
-    readlen = fread(bv->value.as_bytevector->buf + poffs, 1, reqlen, fp);
+    handle = (FILE*)(uintptr_t)fh->value.as_int64;
+    (void)BsFileRead(handle, bv->value.as_bytevector->buf + poffs, reqlen,
+                     &readlen);
     RNFUNC_CALL(ctx, RnInt64(ctx, out, readlen));
     RNFUNC_END;
 }
@@ -2975,7 +2977,7 @@ static RnResult
 ExFilehandleWrite(RnCtx* ctx, Value* out, Value* fh, Value* bv, Value* offs,
                   Value* len){
     RNFUNC_BEGIN;
-    FILE* fp;
+    void* handle;
     size_t reqlen;
     size_t writelen;
     size_t poffs;
@@ -2997,8 +2999,9 @@ ExFilehandleWrite(RnCtx* ctx, Value* out, Value* fh, Value* bv, Value* offs,
         abort();
     }
 
-    fp = (FILE*)(uintptr_t)fh->value.as_int64;
-    writelen = fwrite(bv->value.as_bytevector->buf + poffs, 1, reqlen, fp);
+    handle = (void*)(uintptr_t)fh->value.as_int64;
+    (void)BsFileWrite(handle, bv->value.as_bytevector->buf + poffs, reqlen,
+                      &writelen);
     RNFUNC_CALL(ctx, RnInt64(ctx, out, writelen));
     RNFUNC_END;
 }
@@ -3006,12 +3009,12 @@ ExFilehandleWrite(RnCtx* ctx, Value* out, Value* fh, Value* bv, Value* offs,
 static RnResult
 ExFilehandleFlush(RnCtx* ctx, Value* out, Value* fh){
     RNFUNC_BEGIN;
-    FILE* fp;
+    void* handle;
     if(fh->type != VT_INT64){
         abort();
     }
-    fp = (FILE*)(uintptr_t)fh->value.as_int64;
-    fflush(fp);
+    handle = (void*)(uintptr_t)fh->value.as_int64;
+    BsFileFlush(handle);
     RNFUNC_CALL(ctx, to_bool(ctx, out, 1));
     RNFUNC_END;
 }
@@ -3019,21 +3022,21 @@ ExFilehandleFlush(RnCtx* ctx, Value* out, Value* fh){
 static RnResult
 ExFilehandleStdin(RnCtx* ctx, Value* out){
     RNFUNC_BEGIN;
-    RNFUNC_CALL(ctx, RnInt64(ctx, out, (uintptr_t)stdin));
+    RNFUNC_CALL(ctx, RnInt64(ctx, out, (uintptr_t)BsFileGetStdin()));
     RNFUNC_END;
 }
 
 static RnResult
 ExFilehandleStdout(RnCtx* ctx, Value* out){
     RNFUNC_BEGIN
-    RNFUNC_CALL(ctx, RnInt64(ctx, out, (uintptr_t)stdout));
+    RNFUNC_CALL(ctx, RnInt64(ctx, out, (uintptr_t)BsFileGetStdout()));
     RNFUNC_END;
 }
 
 static RnResult
 ExFilehandleStderr(RnCtx* ctx, Value* out){
     RNFUNC_BEGIN;
-    RNFUNC_CALL(ctx, RnInt64(ctx, out, (uintptr_t)stderr));
+    RNFUNC_CALL(ctx, RnInt64(ctx, out, (uintptr_t)BsFileGetStderr()));
     RNFUNC_END;
 }
 
