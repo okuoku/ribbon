@@ -31,6 +31,7 @@ RnLowMemory(void){
 }
 
 #include <stdarg.h>
+#include <stdio.h> /* FIXME: We still have sprintf in number_to_string */
 #define debugprintf BsDebugPrintf
 
 /* Standard Bootstrap handler implementation */
@@ -51,7 +52,7 @@ void* BsFileGetStderr(void);
 #endif
 void BsDebugPrintf(const char* fmt, ...) PRINTF;
 
-#include <stdio.h>
+#ifndef RN_EMBEDDING
 void*
 BsFileOpenForRead(const char* path){
     return (void*)fopen(path, "rb");
@@ -140,8 +141,7 @@ BsDebugPrintf(const char* fmt, ...){
     (void)vfprintf(stderr, fmt, ap);
     va_end(ap);
 }
-
-
+#endif
 
 
 /* GC */
@@ -2652,6 +2652,7 @@ enter_externals(RnCtx* ctx){
     RnLeave(ctx, &frame);
 }
 
+#ifndef RN_EMBEDDING
 /* main */
 static const char* bootfile = BUILDROOT "/dump.bin";
 
@@ -2704,4 +2705,4 @@ main(int ac, char** av){
 
     return 0;
 }
-
+#endif
