@@ -2962,8 +2962,10 @@ ExFilehandleReadEx(RnCtx* ctx, Value* out, Value* fh, Value* bv, Value* offs,
     }
     reqlen = len->value.as_int64;
     poffs = offs->value.as_int64;
-    if(bv->value.as_bytevector->len < reqlen + poffs){
-        abort();
+    if(! RnBytevectorIsUnlimitedRange(bv->value.as_bytevector)){
+        if(bv->value.as_bytevector->len < reqlen + poffs){
+            abort();
+        }
     }
 
     handle = (FILE*)(uintptr_t)fh->value.as_int64;
@@ -2995,8 +2997,10 @@ ExFilehandleWrite(RnCtx* ctx, Value* out, Value* fh, Value* bv, Value* offs,
     }
     reqlen = len->value.as_int64;
     poffs = offs->value.as_int64;
-    if(bv->value.as_bytevector->len < reqlen + poffs){
-        abort();
+    if(! RnBytevectorIsUnlimitedRange(bv->value.as_bytevector)){
+        if(bv->value.as_bytevector->len < reqlen + poffs){
+            abort();
+        }
     }
 
     handle = (void*)(uintptr_t)fh->value.as_int64;
@@ -3141,11 +3145,15 @@ ExVecCopyEx(RnCtx* ctx, Value* out, Value* tgt, Value* loc,
             RnValueUnlink(ctx, &tmp);
             break;
         case VT_BYTEVECTOR:
-            if(e > src->value.as_bytevector->len){
-                abort();
+            if(! RnBytevectorIsUnlimitedRange(src->value.as_bytevector)){
+                if(e > src->value.as_bytevector->len){
+                    abort();
+                }
             }
-            if((l + (e - s)) > tgt->value.as_bytevector->len){
-                abort();
+            if(! RnBytevectorIsUnlimitedRange(tgt->value.as_bytevector)){
+                if((l + (e - s)) > tgt->value.as_bytevector->len){
+                    abort();
+                }
             }
             f = src->value.as_bytevector->buf + s;
             t = tgt->value.as_bytevector->buf + l;
@@ -3199,8 +3207,10 @@ ExVecRef(RnCtx* ctx, Value* out, Value* vec, Value* idx){
             RNFUNC_CALL(ctx, RnVectorRef(ctx, out, vec, e));
             break;
         case VT_BYTEVECTOR:
-            if(e > vec->value.as_bytevector->len){
-                abort();
+            if(! RnBytevectorIsUnlimitedRange(vec->value.as_bytevector)){
+                if(e > vec->value.as_bytevector->len){
+                    abort();
+                }
             }
             v.as_int64 = vec->value.as_bytevector->buf[e];
             RnValueRef(ctx, out, v, VT_INT64);
@@ -3246,8 +3256,10 @@ ExVecSetEx(RnCtx* ctx, Value* out, Value* vec, Value* idx, Value* obj){
             if(obj->value.as_int64 > 256){
                 abort();
             }
-            if(e > vec->value.as_bytevector->len){
-                abort();
+            if(! RnBytevectorIsUnlimitedRange(vec->value.as_bytevector)){
+                if(e > vec->value.as_bytevector->len){
+                    abort();
+                }
             }
             vec->value.as_bytevector->buf[e] = 
                 (unsigned char)obj->value.as_int64;
@@ -3367,8 +3379,10 @@ ExVecFillEx(RnCtx* ctx, Value* out, Value* vec, Value* obj,
             if(obj->value.as_int64 > 256){
                 abort();
             }
-            if(t > vec->value.as_bytevector->len){
-                abort();
+            if(! RnBytevectorIsUnlimitedRange(vec->value.as_bytevector)){
+                if(t > vec->value.as_bytevector->len){
+                    abort();
+                }
             }
             for(i = f; i != t; i++){
                 vec->value.as_bytevector->buf[i] = 
@@ -3640,6 +3654,581 @@ ExHtSize(RnCtx* ctx, Value* out, Value* ht){
     RNFUNC_END;
 }
 
+/* FFI Related */
+/* (bv-ref/s8 bv byteoff) */
+/* (bv-ref/u8 bv byteoff) */
+/* (bv-ref/u16 bv byteoff) */
+/* (bv-ref/s16 bv byteoff) */
+/* (bv-ref/u32 bv byteoff) */
+/* (bv-ref/s32 bv byteoff) */
+/* (bv-ref/u64 bv byteoff) */
+/* (bv-ref/s64 bv byteoff) */
+/* (bv-ref/ptr bv byteoff) */
+/* (bv-set!/s8 bv byteoff v) */
+/* (bv-set!/u8 bv byteoff v) */
+/* (bv-set!/u16 bv byteoff v) */
+/* (bv-set!/s16 bv byteoff v) */
+/* (bv-set!/u32 bv byteoff v) */
+/* (bv-set!/s32 bv byteoff v) */
+/* (bv-set!/u64 bv byteoff v) */
+/* (bv-set!/s64 bv byteoff v) */
+/* (bv-set!/ptr bv byteoff v) */
+/* (address->bytevector v len?) */
+/* (bytevector->address bv) */
+/* (nccc-call ptr in inoff out outoff) */
+
+static RnResult
+ExBvRef_s8(RnCtx* ctx, Value* out, Value* bv, Value* off){
+    RNFUNC_BEGIN;
+    ValueContainer v;
+    size_t e;
+    int8_t* vp;
+    if(off->type != VT_INT64){
+        abort();
+    }
+    if(bv->type != VT_BYTEVECTOR){
+        abort();
+    }
+    e = off->value.as_int64;
+    if(! RnBytevectorIsUnlimitedRange(bv->value.as_bytevector)){
+        if(e > bv->value.as_bytevector->len){
+            abort();
+        }
+    }
+    vp = (int8_t*)&bv->value.as_bytevector->buf[e];
+    v.as_int64 = *vp;
+    RnValueRef(ctx, out, v, VT_INT64);
+    RNFUNC_END;
+}
+
+static RnResult
+ExBvRef_s16(RnCtx* ctx, Value* out, Value* bv, Value* off){
+    RNFUNC_BEGIN;
+    ValueContainer v;
+    size_t e;
+    int16_t* vp;
+    if(off->type != VT_INT64){
+        abort();
+    }
+    if(bv->type != VT_BYTEVECTOR){
+        abort();
+    }
+    e = off->value.as_int64;
+    if(! RnBytevectorIsUnlimitedRange(bv->value.as_bytevector)){
+        if(e > bv->value.as_bytevector->len){
+            abort();
+        }
+    }
+    vp = (int16_t*)&bv->value.as_bytevector->buf[e];
+    v.as_int64 = *vp;
+    RnValueRef(ctx, out, v, VT_INT64);
+    RNFUNC_END;
+}
+
+static RnResult
+ExBvRef_s32(RnCtx* ctx, Value* out, Value* bv, Value* off){
+    RNFUNC_BEGIN;
+    ValueContainer v;
+    size_t e;
+    int32_t* vp;
+    if(off->type != VT_INT64){
+        abort();
+    }
+    if(bv->type != VT_BYTEVECTOR){
+        abort();
+    }
+    e = off->value.as_int64;
+    if(! RnBytevectorIsUnlimitedRange(bv->value.as_bytevector)){
+        if(e > bv->value.as_bytevector->len){
+            abort();
+        }
+    }
+    vp = (int32_t*)&bv->value.as_bytevector->buf[e];
+    v.as_int64 = *vp;
+    RnValueRef(ctx, out, v, VT_INT64);
+    RNFUNC_END;
+}
+
+static RnResult
+ExBvRef_s64(RnCtx* ctx, Value* out, Value* bv, Value* off){
+    RNFUNC_BEGIN;
+    ValueContainer v;
+    size_t e;
+    int64_t* vp;
+    if(off->type != VT_INT64){
+        abort();
+    }
+    if(bv->type != VT_BYTEVECTOR){
+        abort();
+    }
+    e = off->value.as_int64;
+    if(! RnBytevectorIsUnlimitedRange(bv->value.as_bytevector)){
+        if(e > bv->value.as_bytevector->len){
+            abort();
+        }
+    }
+    vp = (int64_t*)&bv->value.as_bytevector->buf[e];
+    v.as_int64 = *vp;
+    RnValueRef(ctx, out, v, VT_INT64);
+    RNFUNC_END;
+}
+
+static RnResult
+ExBvRef_u8(RnCtx* ctx, Value* out, Value* bv, Value* off){
+    RNFUNC_BEGIN;
+    ValueContainer v;
+    size_t e;
+    uint8_t* vp;
+    if(off->type != VT_INT64){
+        abort();
+    }
+    if(bv->type != VT_BYTEVECTOR){
+        abort();
+    }
+    e = off->value.as_int64;
+    if(! RnBytevectorIsUnlimitedRange(bv->value.as_bytevector)){
+        if(e > bv->value.as_bytevector->len){
+            abort();
+        }
+    }
+    vp = (uint8_t*)&bv->value.as_bytevector->buf[e];
+    v.as_int64 = *vp;
+    RnValueRef(ctx, out, v, VT_INT64);
+    RNFUNC_END;
+}
+
+static RnResult
+ExBvRef_u16(RnCtx* ctx, Value* out, Value* bv, Value* off){
+    RNFUNC_BEGIN;
+    ValueContainer v;
+    size_t e;
+    uint16_t* vp;
+    if(off->type != VT_INT64){
+        abort();
+    }
+    if(bv->type != VT_BYTEVECTOR){
+        abort();
+    }
+    e = off->value.as_int64;
+    if(! RnBytevectorIsUnlimitedRange(bv->value.as_bytevector)){
+        if(e > bv->value.as_bytevector->len){
+            abort();
+        }
+    }
+    vp = (uint16_t*)&bv->value.as_bytevector->buf[e];
+    v.as_int64 = *vp;
+    RnValueRef(ctx, out, v, VT_INT64);
+    RNFUNC_END;
+}
+
+static RnResult
+ExBvRef_u32(RnCtx* ctx, Value* out, Value* bv, Value* off){
+    RNFUNC_BEGIN;
+    ValueContainer v;
+    size_t e;
+    uint32_t* vp;
+    if(off->type != VT_INT64){
+        abort();
+    }
+    if(bv->type != VT_BYTEVECTOR){
+        abort();
+    }
+    e = off->value.as_int64;
+    if(! RnBytevectorIsUnlimitedRange(bv->value.as_bytevector)){
+        if(e > bv->value.as_bytevector->len){
+            abort();
+        }
+    }
+    vp = (uint32_t*)&bv->value.as_bytevector->buf[e];
+    v.as_int64 = *vp;
+    RnValueRef(ctx, out, v, VT_INT64);
+    RNFUNC_END;
+}
+
+static RnResult
+ExBvRef_u64(RnCtx* ctx, Value* out, Value* bv, Value* off){
+    RNFUNC_BEGIN;
+    ValueContainer v;
+    size_t e;
+    uint64_t* vp;
+    if(off->type != VT_INT64){
+        abort();
+    }
+    if(bv->type != VT_BYTEVECTOR){
+        abort();
+    }
+    e = off->value.as_int64;
+    if(! RnBytevectorIsUnlimitedRange(bv->value.as_bytevector)){
+        if(e > bv->value.as_bytevector->len){
+            abort();
+        }
+    }
+    vp = (uint64_t*)&bv->value.as_bytevector->buf[e];
+    v.as_int64 = *vp;
+    RnValueRef(ctx, out, v, VT_INT64);
+    RNFUNC_END;
+}
+
+static RnResult
+ExBvRef_ptr(RnCtx* ctx, Value* out, Value* bv, Value* off){
+    RNFUNC_BEGIN;
+    ValueContainer v;
+    size_t e;
+    uintptr_t* vp;
+    if(off->type != VT_INT64){
+        abort();
+    }
+    if(bv->type != VT_BYTEVECTOR){
+        abort();
+    }
+    e = off->value.as_int64;
+    if(! RnBytevectorIsUnlimitedRange(bv->value.as_bytevector)){
+        if(e > bv->value.as_bytevector->len){
+            abort();
+        }
+    }
+    vp = (uintptr_t*)&bv->value.as_bytevector->buf[e];
+    v.as_int64 = *vp;
+    RnValueRef(ctx, out, v, VT_INT64);
+    RNFUNC_END;
+}
+
+static RnResult
+ExBvSetEx_s8(RnCtx* ctx, Value* out, Value* bv, Value* off, Value* d){
+    RNFUNC_BEGIN;
+    size_t e;
+    int8_t* vp;
+    if(off->type != VT_INT64){
+        abort();
+    }
+    if(bv->type != VT_BYTEVECTOR){
+        abort();
+    }
+    if(d->type != VT_INT64){
+        abort();
+    }
+    e = off->value.as_int64;
+    if(! RnBytevectorIsUnlimitedRange(bv->value.as_bytevector)){
+        if(e > bv->value.as_bytevector->len){
+            abort();
+        }
+    }
+    vp = (int8_t*)&bv->value.as_bytevector->buf[e];
+    *vp = d->value.as_int64;
+    RNFUNC_CALL(ctx, to_bool(ctx, out, 1));
+    RNFUNC_END;
+}
+
+static RnResult
+ExBvSetEx_s16(RnCtx* ctx, Value* out, Value* bv, Value* off, Value* d){
+    RNFUNC_BEGIN;
+    size_t e;
+    int16_t* vp;
+    if(off->type != VT_INT64){
+        abort();
+    }
+    if(bv->type != VT_BYTEVECTOR){
+        abort();
+    }
+    if(d->type != VT_INT64){
+        abort();
+    }
+    e = off->value.as_int64;
+    if(! RnBytevectorIsUnlimitedRange(bv->value.as_bytevector)){
+        if(e > bv->value.as_bytevector->len){
+            abort();
+        }
+    }
+    vp = (int16_t*)&bv->value.as_bytevector->buf[e];
+    *vp = d->value.as_int64;
+    RNFUNC_CALL(ctx, to_bool(ctx, out, 1));
+    RNFUNC_END;
+}
+
+static RnResult
+ExBvSetEx_s32(RnCtx* ctx, Value* out, Value* bv, Value* off, Value* d){
+    RNFUNC_BEGIN;
+    size_t e;
+    int32_t* vp;
+    if(off->type != VT_INT64){
+        abort();
+    }
+    if(bv->type != VT_BYTEVECTOR){
+        abort();
+    }
+    if(d->type != VT_INT64){
+        abort();
+    }
+    e = off->value.as_int64;
+    if(! RnBytevectorIsUnlimitedRange(bv->value.as_bytevector)){
+        if(e > bv->value.as_bytevector->len){
+            abort();
+        }
+    }
+    vp = (int32_t*)&bv->value.as_bytevector->buf[e];
+    *vp = d->value.as_int64;
+    RNFUNC_CALL(ctx, to_bool(ctx, out, 1));
+    RNFUNC_END;
+}
+
+static RnResult
+ExBvSetEx_s64(RnCtx* ctx, Value* out, Value* bv, Value* off, Value* d){
+    RNFUNC_BEGIN;
+    size_t e;
+    int64_t* vp;
+    if(off->type != VT_INT64){
+        abort();
+    }
+    if(bv->type != VT_BYTEVECTOR){
+        abort();
+    }
+    if(d->type != VT_INT64){
+        abort();
+    }
+    e = off->value.as_int64;
+    if(! RnBytevectorIsUnlimitedRange(bv->value.as_bytevector)){
+        if(e > bv->value.as_bytevector->len){
+            abort();
+        }
+    }
+    vp = (int64_t*)&bv->value.as_bytevector->buf[e];
+    *vp = d->value.as_int64;
+    RNFUNC_CALL(ctx, to_bool(ctx, out, 1));
+    RNFUNC_END;
+}
+
+static RnResult
+ExBvSetEx_u8(RnCtx* ctx, Value* out, Value* bv, Value* off, Value* d){
+    RNFUNC_BEGIN;
+    size_t e;
+    uint8_t* vp;
+    if(off->type != VT_INT64){
+        abort();
+    }
+    if(bv->type != VT_BYTEVECTOR){
+        abort();
+    }
+    if(d->type != VT_INT64){
+        abort();
+    }
+    e = off->value.as_int64;
+    if(! RnBytevectorIsUnlimitedRange(bv->value.as_bytevector)){
+        if(e > bv->value.as_bytevector->len){
+            abort();
+        }
+    }
+    vp = (uint8_t*)&bv->value.as_bytevector->buf[e];
+    *vp = d->value.as_int64;
+    RNFUNC_CALL(ctx, to_bool(ctx, out, 1));
+    RNFUNC_END;
+}
+
+static RnResult
+ExBvSetEx_u16(RnCtx* ctx, Value* out, Value* bv, Value* off, Value* d){
+    RNFUNC_BEGIN;
+    size_t e;
+    uint16_t* vp;
+    if(off->type != VT_INT64){
+        abort();
+    }
+    if(bv->type != VT_BYTEVECTOR){
+        abort();
+    }
+    if(d->type != VT_INT64){
+        abort();
+    }
+    e = off->value.as_int64;
+    if(! RnBytevectorIsUnlimitedRange(bv->value.as_bytevector)){
+        if(e > bv->value.as_bytevector->len){
+            abort();
+        }
+    }
+    vp = (uint16_t*)&bv->value.as_bytevector->buf[e];
+    *vp = d->value.as_int64;
+    RNFUNC_CALL(ctx, to_bool(ctx, out, 1));
+    RNFUNC_END;
+}
+
+static RnResult
+ExBvSetEx_u32(RnCtx* ctx, Value* out, Value* bv, Value* off, Value* d){
+    RNFUNC_BEGIN;
+    size_t e;
+    uint32_t* vp;
+    if(off->type != VT_INT64){
+        abort();
+    }
+    if(bv->type != VT_BYTEVECTOR){
+        abort();
+    }
+    if(d->type != VT_INT64){
+        abort();
+    }
+    e = off->value.as_int64;
+    if(! RnBytevectorIsUnlimitedRange(bv->value.as_bytevector)){
+        if(e > bv->value.as_bytevector->len){
+            abort();
+        }
+    }
+    vp = (uint32_t*)&bv->value.as_bytevector->buf[e];
+    *vp = d->value.as_int64;
+    RNFUNC_CALL(ctx, to_bool(ctx, out, 1));
+    RNFUNC_END;
+}
+
+static RnResult
+ExBvSetEx_u64(RnCtx* ctx, Value* out, Value* bv, Value* off, Value* d){
+    RNFUNC_BEGIN;
+    size_t e;
+    uint64_t* vp;
+    if(off->type != VT_INT64){
+        abort();
+    }
+    if(bv->type != VT_BYTEVECTOR){
+        abort();
+    }
+    if(d->type != VT_INT64){
+        abort();
+    }
+    e = off->value.as_int64;
+    if(! RnBytevectorIsUnlimitedRange(bv->value.as_bytevector)){
+        if(e > bv->value.as_bytevector->len){
+            abort();
+        }
+    }
+    vp = (uint64_t*)&bv->value.as_bytevector->buf[e];
+    *vp = d->value.as_int64;
+    RNFUNC_CALL(ctx, to_bool(ctx, out, 1));
+    RNFUNC_END;
+}
+
+static RnResult
+ExBvSetEx_ptr(RnCtx* ctx, Value* out, Value* bv, Value* off, Value* d){
+    RNFUNC_BEGIN;
+    size_t e;
+    uintptr_t* vp;
+    if(off->type != VT_INT64){
+        abort();
+    }
+    if(bv->type != VT_BYTEVECTOR){
+        abort();
+    }
+    if(d->type != VT_INT64){
+        abort();
+    }
+    e = off->value.as_int64;
+    if(! RnBytevectorIsUnlimitedRange(bv->value.as_bytevector)){
+        if(e > bv->value.as_bytevector->len){
+            abort();
+        }
+    }
+    vp = (uintptr_t*)&bv->value.as_bytevector->buf[e];
+    *vp = d->value.as_int64;
+    RNFUNC_CALL(ctx, to_bool(ctx, out, 1));
+    RNFUNC_END;
+}
+
+static RnResult
+ExAddressToBytevector(RnCtx* ctx, Value* out, Value* addr, Value* len){
+    RNFUNC_BEGIN;
+    int has_len;
+    size_t len_value;
+    void* addr_value;
+    if(addr->type != VT_INT64){
+        abort();
+    }
+    if(len->type == VT_INT64){
+        len_value = len->value.as_int64;
+        has_len = 1;
+    }else if(len->type == VT_ZONE0 && len->value.as_zone0 == ZZ_FALSE){
+        len_value = 0;
+        has_len = 0;
+    }else{
+        abort();
+    }
+
+    addr_value = (void*)(uintptr_t)addr->value.as_int64;
+
+    RNFUNC_CALL(ctx, RnBytevectorExternal(ctx, out, addr_value, has_len,
+                                          len_value));
+    RNFUNC_END;
+}
+
+static RnResult
+ExBytevectorToAddress(RnCtx* ctx, Value* out, Value* bv){
+    RNFUNC_BEGIN;
+    ValueContainer v;
+    if(bv->type != VT_BYTEVECTOR){
+        abort();
+    }
+    v.as_int64 = (uint64_t)(uintptr_t)bv->value.as_bytevector->buf;
+    RnValueRef(ctx, out, v, VT_INT64);
+    RNFUNC_END;
+}
+
+typedef void (*NcccFunc)(const uint64_t* in, uint64_t* out);
+
+static RnResult
+ExNcccCall(RnCtx* ctx, Value* out, Value* funcptr,
+           Value* inbv, Value* inoff,
+           Value* outbv, Value* outoff){
+    RNFUNC_BEGIN;
+    NcccFunc func;
+    const uint64_t* argin;
+    uint64_t* argout;
+    /* FIXME: No validation done against bv offsets */
+    /* FIXME: Check alignment for in/out buffers */
+    if(funcptr->type != VT_INT64){
+        abort();
+    }
+    if(inbv->type != VT_BYTEVECTOR){
+        abort();
+    }
+    if(outbv->type != VT_BYTEVECTOR){
+        abort();
+    }
+    if(inoff->type != VT_INT64){
+        abort();
+    }
+    if(outoff->type != VT_INT64){
+        abort();
+    }
+
+    func = (NcccFunc) funcptr->value.as_int64;
+    argin = (uint64_t*)(inbv->value.as_bytevector->buf + 
+                        inoff->value.as_int64);
+    argout = (uint64_t*)(outbv->value.as_bytevector->buf + 
+                         outoff->value.as_int64);
+
+    /* Call nccc func */
+    func(argin, argout);
+
+    RNFUNC_CALL(ctx, to_bool(ctx, out, 1));
+    RNFUNC_END;
+}
+
+#define EXLIB_NCCC(x) \
+    x("bv-ref/s8", ExBvRef_s8, _2_1) \
+    x("bv-ref/u8", ExBvRef_u8, _2_1) \
+    x("bv-ref/s16", ExBvRef_s16, _2_1) \
+    x("bv-ref/u16", ExBvRef_u16, _2_1) \
+    x("bv-ref/s32", ExBvRef_s32, _2_1) \
+    x("bv-ref/u32", ExBvRef_u32, _2_1) \
+    x("bv-ref/s64", ExBvRef_s64, _2_1) \
+    x("bv-ref/u64", ExBvRef_u64, _2_1) \
+    x("bv-ref/ptr", ExBvRef_ptr, _2_1) \
+    x("bv-set!/s8", ExBvSetEx_s8, _3_1) \
+    x("bv-set!/u8", ExBvSetEx_u8, _3_1) \
+    x("bv-set!/s16", ExBvSetEx_s16, _3_1) \
+    x("bv-set!/u16", ExBvSetEx_u16, _3_1) \
+    x("bv-set!/s32", ExBvSetEx_s32, _3_1) \
+    x("bv-set!/u32", ExBvSetEx_u32, _3_1) \
+    x("bv-set!/s64", ExBvSetEx_s64, _3_1) \
+    x("bv-set!/u64", ExBvSetEx_u64, _3_1) \
+    x("bv-set!/ptr", ExBvSetEx_ptr, _3_1) \
+    x("address->bytevector", ExAddressToBytevector, _2_1) \
+    x("bytevector->address", ExBytevectorToAddress, _1_1) \
+    x("nccc-call", ExNcccCall, _5_1)
+
 #define EXFUN(nam, fn) {nam, sizeof(nam) - 1, fn}
 
 EXLIB_RIB(GEN_BRIDGE)
@@ -3649,6 +4238,7 @@ EXLIB_FILE(GEN_BRIDGE)
 EXLIB_VEC(GEN_BRIDGE)
 EXLIB_HT(GEN_BRIDGE)
 EXLIB_VMSUP(GEN_BRIDGE)
+EXLIB_NCCC(GEN_BRIDGE)
 
 RnVmEx vm_externals[] = {
     EXLIB_RIB(GEN_FILD)
@@ -3658,6 +4248,7 @@ RnVmEx vm_externals[] = {
     EXLIB_VEC(GEN_FILD)
     EXLIB_HT(GEN_FILD)
     EXLIB_VMSUP(GEN_FILD)
+    EXLIB_NCCC(GEN_FILD)
     EXFUN("$error/core", ExErrorCore),
     {0, 0, 0}
 };

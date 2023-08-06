@@ -655,10 +655,12 @@ RnUnrefBytevector(RnCtx* ctx, ObjBytevector* bytevector){
     }
     bytevector->refcnt--;
     if(bytevector->refcnt == 0){
+        if(! RnBytevectorIsExternal(bytevector)){
 #ifdef DEBUG_FILLFREED
-        memset(bytevector->buf, 0xcc, bytevector->len);
+            memset(bytevector->buf, 0xcc, bytevector->len);
 #endif
-        free(bytevector->buf);
+            free(bytevector->buf);
+        }
 #ifdef DEBUG_FILLFREED
         memset(bytevector, 0xcc, sizeof(ObjBytevector));
 #endif
@@ -1138,6 +1140,35 @@ RnBytevector(RnCtx* ctx, Value* out, size_t len){
         RnLowMemory();
     }
     bv->len = len;
+    bv->typeinfo = 0;
+    bv->refcnt = 0;
+
+    v.as_bytevector = bv;
+    RnValueRef(ctx, out, v, VT_BYTEVECTOR);
+    RNFUNC_END;
+}
+
+RnResult
+RnBytevectorExternal(RnCtx* ctx, Value* out, void* ptr, 
+                     int has_len, size_t len){
+    RNFUNC_BEGIN;
+    ValueContainer v;
+    ObjBytevector* bv;
+
+    bv = (ObjBytevector*)malloc(sizeof(ObjBytevector));
+    if(! bv){
+        RnLowMemory();
+    }
+    bv->buf = (uint8_t*)ptr;
+    if(! bv->buf){
+        RnLowMemory();
+    }
+    bv->len = len;
+    if(has_len){
+        bv->typeinfo = 3; /* Is external and has unlimited range */
+    }else{
+        bv->typeinfo = 1; /* Is external */
+    }
     bv->refcnt = 0;
 
     v.as_bytevector = bv;

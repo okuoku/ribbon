@@ -80,11 +80,22 @@ typedef struct ObjVector_s ObjVector;
 
 struct ObjBytevector_s {
     uintptr_t refcnt;
+    uintptr_t typeinfo; /* FIXME: Tentative */
     uint8_t* buf;
     size_t len;
 };
 
 typedef struct ObjBytevector_s ObjBytevector;
+
+static inline int
+RnBytevectorIsExternal(ObjBytevector* bv){
+    return bv->typeinfo & 1;
+}
+
+static inline int
+RnBytevectorIsUnlimitedRange(ObjBytevector* bv){
+    return bv->typeinfo & 2;
+}
 
 struct ObjString_s {
     uintptr_t refcnt;
