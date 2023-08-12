@@ -2683,6 +2683,14 @@ enter_externals(RnCtx* ctx){
     RnLeave(ctx, &frame);
 }
 
+void
+RnCtxRunBootstrap(RnCtx* ctx, const uint8_t* bootstrap){
+    load_bootstrap(ctx, bootstrap);
+    enter_externals(ctx);
+    parse_bootstrap(ctx);
+    run_bootstrap(ctx);
+}
+
 #ifndef RN_EMBEDDING
 /* main */
 static const char* bootfile = BUILDROOT "/dump.bin";
@@ -2726,11 +2734,7 @@ main(int ac, char** av){
     bootstrap = (uint8_t*)BsFileReadAll(bootfile);
 
     /* Run bootstrap */
-    load_bootstrap(&ctx, bootstrap);
-    enter_externals(&ctx);
-    parse_bootstrap(&ctx);
-    run_bootstrap(&ctx);
-
+    RnCtxRunBootstrap(&ctx, bootstrap);
     free(bootstrap);
     // FIXME: Deinit context here
 

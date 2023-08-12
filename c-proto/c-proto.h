@@ -199,3 +199,13 @@ struct RnVmEx_s {
 };
 
 typedef struct RnVmEx_s RnVmEx;
+
+/* Interface APIs */
+void RnCtxInit(RnCtx* newctx);
+void RnCtxRunBootstrap(RnCtx* ctx, const uint8_t* bootstrap);
+void RnValueLink(RnCtx* ctx, Value* target);
+void RnValueUnlink(RnCtx* ctx, Value* target);
+RnResult RnVector(RnCtx* ctx, Value* out, size_t len);
+RnResult RnVectorSet(RnCtx* ctx, Value* target, Value* obj, size_t idx);
+RnResult RnString(RnCtx* ctx, Value* out, const char* name, size_t len);
+
