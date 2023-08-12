@@ -6,9 +6,9 @@ struct ObjHeader_s {
     uintptr_t gc_refinfo; /* refcnt * 8 + GC_TYPE + walked? */
 };
 
-const uintptr_t GC_TYPE_RIB = 1 * 2;
-const uintptr_t GC_TYPE_VECTOR = 2 * 2;
-const uintptr_t GC_TYPE_HASHTABLE = 3 * 2;
+static const uintptr_t GC_TYPE_RIB = 1 * 2;
+static const uintptr_t GC_TYPE_VECTOR = 2 * 2;
+static const uintptr_t GC_TYPE_HASHTABLE = 3 * 2;
 
 typedef struct ObjHeader_s ObjHeader;
 
