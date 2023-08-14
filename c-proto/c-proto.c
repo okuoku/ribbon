@@ -1165,9 +1165,9 @@ RnBytevectorExternal(RnCtx* ctx, Value* out, void* ptr,
     }
     bv->len = len;
     if(has_len){
-        bv->typeinfo = 3; /* Is external and has unlimited range */
-    }else{
         bv->typeinfo = 1; /* Is external */
+    }else{
+        bv->typeinfo = 3; /* Is external and has unlimited range */
     }
     bv->refcnt = 0;
 
