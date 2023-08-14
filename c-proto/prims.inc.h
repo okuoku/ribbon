@@ -4206,6 +4206,31 @@ ExNcccCall(RnCtx* ctx, Value* out, Value* funcptr,
     RNFUNC_END;
 }
 
+#ifdef __cplusplus
+extern "C"
+#endif
+uintptr_t ncccinteg_get_dispatch(uintptr_t idx);
+
+static RnResult
+ExNcccSizeOfPointer(RnCtx* ctx, Value* out){
+    RNFUNC_BEGIN;
+    RNFUNC_CALL(ctx, RnInt64(ctx, out, sizeof(uintptr_t)));
+    RNFUNC_END;
+}
+
+static RnResult
+ExNcccGetDispatch(RnCtx* ctx, Value* out, Value* idx){
+    RNFUNC_BEGIN;
+    uintptr_t dispatch;
+    if(idx->type != VT_INT64){
+        abort();
+    }
+
+    dispatch = ncccinteg_get_dispatch(idx->value.as_int64);
+    RNFUNC_CALL(ctx, RnInt64(ctx, out, dispatch));
+    RNFUNC_END;
+}
+
 #define EXLIB_NCCC(x) \
     x("bv-ref/s8", ExBvRef_s8, _2_1) \
     x("bv-ref/u8", ExBvRef_u8, _2_1) \
@@ -4227,7 +4252,9 @@ ExNcccCall(RnCtx* ctx, Value* out, Value* funcptr,
     x("bv-set!/ptr", ExBvSetEx_ptr, _3_1) \
     x("address->bytevector", ExAddressToBytevector, _2_1) \
     x("bytevector->address", ExBytevectorToAddress, _1_1) \
-    x("nccc-call", ExNcccCall, _5_1)
+    x("nccc-call", ExNcccCall, _5_1) \
+    x("nccc-sizeof-ptr", ExNcccSizeOfPointer, _0_1) \
+    x("nccc-get-dispatch", ExNcccGetDispatch, _1_1)
 
 #define EXFUN(nam, fn) {nam, sizeof(nam) - 1, fn}
 

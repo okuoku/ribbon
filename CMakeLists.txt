@@ -100,9 +100,11 @@ add_definitions(
     -DBUILDROOT=\"${CMAKE_CURRENT_BINARY_DIR}\")
 
 add_executable(proto
+    c-proto/nccc-dummy.c
     c-proto/c-proto.c)
 
 add_executable(protoxx
+    c-proto/nccc-dummy.c
     cxx-proto/cxx-proto.cpp)
 
 maxwarn(proto)
@@ -114,4 +116,13 @@ brand(protoxx)
 
 if(NOT RIBBON_SKIP_TESTS)
     include(${CMAKE_CURRENT_LIST_DIR}/tests.cmake)
+endif()
+
+# Integration helpers
+if(RIBBON_INTEG_BUILD_DIR)
+    message(STATUS "Generating bootstrap files on ${RIBBON_INTEG_BUILD_DIR}")
+    # Dep list
+    file(WRITE ${RIBBON_INTEG_BUILD_DIR}/deps.cmake "set(yunideps_srcs ${yunifiles};${runtimefiles})\n")
+    file(WRITE ${RIBBON_INTEG_BUILD_DIR}/bootstrap_params.cmake
+        "set(WITH_RUNTIME \"${WITH_RUNTIME}\")\nset(ROOT \"${WITH_YUNI}\")\nset(IMPL gauche)\n\nset(WITH_YUNI \"${WITH_YUNI}\")\nset(BUILDROOT \"${CMAKE_CURRENT_BINARY_DIR}\")\n")
 endif()
