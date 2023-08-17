@@ -3663,7 +3663,7 @@ ExHtSize(RnCtx* ctx, Value* out, Value* ht){
 /* (bv-ref/s32 bv byteoff) */
 /* (bv-ref/u64 bv byteoff) */
 /* (bv-ref/s64 bv byteoff) */
-/* (bv-ref/ptr bv byteoff) */
+/* (bv-ref/ptr0 bv byteoff) */
 /* (bv-set!/s8 bv byteoff v) */
 /* (bv-set!/u8 bv byteoff v) */
 /* (bv-set!/u16 bv byteoff v) */
@@ -3672,7 +3672,7 @@ ExHtSize(RnCtx* ctx, Value* out, Value* ht){
 /* (bv-set!/s32 bv byteoff v) */
 /* (bv-set!/u64 bv byteoff v) */
 /* (bv-set!/s64 bv byteoff v) */
-/* (bv-set!/ptr bv byteoff v) */
+/* (bv-set!/ptr0 bv byteoff v) */
 /* (address->bytevector v len?) */
 /* (bytevector->address bv) */
 /* (nccc-call ptr in inoff out outoff) */
@@ -4240,7 +4240,7 @@ ExNcccGetDispatch(RnCtx* ctx, Value* out, Value* idx){
     x("bv-ref/u32", ExBvRef_u32, _2_1) \
     x("bv-ref/s64", ExBvRef_s64, _2_1) \
     x("bv-ref/u64", ExBvRef_u64, _2_1) \
-    x("bv-ref/ptr", ExBvRef_ptr, _2_1) \
+    x("bv-ref/ptr0", ExBvRef_ptr, _2_1) \
     x("bv-set!/s8", ExBvSetEx_s8, _3_1) \
     x("bv-set!/u8", ExBvSetEx_u8, _3_1) \
     x("bv-set!/s16", ExBvSetEx_s16, _3_1) \
@@ -4249,12 +4249,12 @@ ExNcccGetDispatch(RnCtx* ctx, Value* out, Value* idx){
     x("bv-set!/u32", ExBvSetEx_u32, _3_1) \
     x("bv-set!/s64", ExBvSetEx_s64, _3_1) \
     x("bv-set!/u64", ExBvSetEx_u64, _3_1) \
-    x("bv-set!/ptr", ExBvSetEx_ptr, _3_1) \
+    x("bv-set!/ptr0", ExBvSetEx_ptr, _3_1) \
     x("address->bytevector", ExAddressToBytevector, _2_1) \
     x("bytevector->address", ExBytevectorToAddress, _1_1) \
-    x("nccc-call", ExNcccCall, _5_1) \
+    x("nccc-call0", ExNcccCall, _5_1) \
     x("nccc-sizeof-ptr", ExNcccSizeOfPointer, _0_1) \
-    x("nccc-get-dispatch", ExNcccGetDispatch, _1_1)
+    x("nccc-get-dispatch0", ExNcccGetDispatch, _1_1)
 
 #define EXFUN(nam, fn) {nam, sizeof(nam) - 1, fn}
 
