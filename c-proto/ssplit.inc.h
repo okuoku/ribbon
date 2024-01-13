@@ -667,7 +667,7 @@ ribbon_mr_input(mrctx* ctx, mrtoken* tkn, size_t tkncnt,
 #define MR_END_HERE(tkn_type) \
         MR_TKN_SET_START(tkn_type); \
         tkn[curidx].end_stream = step_stream; \
-        tkn[curidx].end_index = step_index; \
+        tkn[curidx].end_index = step_index + 1; \
         tkn[curidx].end_lineno = ctx->lineno; \
         tkn[curidx].end_column = ctx->column; \
         MR_EMIT_TKN()
@@ -675,7 +675,7 @@ ribbon_mr_input(mrctx* ctx, mrtoken* tkn, size_t tkncnt,
 #define MR_END_PREV() \
         MR_TKN_SET_START(ctx->prev_type); \
         tkn[curidx].end_stream = ctx->prev_stream; \
-        tkn[curidx].end_index = ctx->prev_index; \
+        tkn[curidx].end_index = ctx->prev_index + 1; \
         tkn[curidx].end_lineno = ctx->prev_lineno; \
         tkn[curidx].end_column = ctx->prev_column; \
         MR_EMIT_TKN()
