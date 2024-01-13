@@ -4258,6 +4258,12 @@ ExNcccGetDispatch(RnCtx* ctx, Value* out, Value* idx){
 
 #define EXFUN(nam, fn) {nam, sizeof(nam) - 1, fn}
 
+#include "ssplit.inc.h"
+#include "reader.inc.h"
+
+#define EXLIB_MINIREAD(x) \
+    x("miniread-utf8-read", ExUtf8Read, _1_1)
+
 EXLIB_RIB(GEN_BRIDGE)
 EXLIB_MISC(GEN_BRIDGE)
 EXLIB_MATH(GEN_BRIDGE)
@@ -4266,6 +4272,7 @@ EXLIB_VEC(GEN_BRIDGE)
 EXLIB_HT(GEN_BRIDGE)
 EXLIB_VMSUP(GEN_BRIDGE)
 EXLIB_NCCC(GEN_BRIDGE)
+EXLIB_MINIREAD(GEN_BRIDGE)
 
 RnVmEx vm_externals[] = {
     EXLIB_RIB(GEN_FILD)
@@ -4276,6 +4283,7 @@ RnVmEx vm_externals[] = {
     EXLIB_HT(GEN_FILD)
     EXLIB_VMSUP(GEN_FILD)
     EXLIB_NCCC(GEN_FILD)
+    EXLIB_MINIREAD(GEN_FILD)
     EXFUN("$error/core", ExErrorCore),
     {0, 0, 0}
 };
