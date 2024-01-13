@@ -132,8 +132,8 @@ enum mr_objtype_e {
 
 typedef enum mr_objtype_e mr_objtype;
 
-#define MRCMPX(k, n) ((me->end_index - me->start_index) >= n) \
-&& (memcmp(&buf[me->start_index], k, n) == 0)
+#define MRCMPX(k, n) (((me->end_index - me->start_index) >= n) \
+&& (memcmp(&buf[me->start_index], k, n) == 0))
 
 #define MRCMP1(k) (buf[me->start_index] == k[0])
 #define MRCMP(k, n) (n == 1) ? MRCMP1(k) : MRCMPX(k,n)
@@ -311,8 +311,8 @@ mr_realize_itr(RnCtx* ctx, Value* out, mr_realize_mode mode,
             *curidx = 0;
         }
         me = &vec[*curidx];
-        *curidx++;
-        *totalidx++;
+        *curidx += 1;
+        *totalidx += 1;
 
 #define MMITR(next) \
         RNFUNC_CALL(ctx, mr_realize_itr(ctx, &tmp, next, curvec, curidx, \
@@ -483,7 +483,7 @@ ExUtf8Read(RnCtx* ctx, Value* out, Value* bv){
         RNFUNC_CALL(ctx, mr_sector_new(ctx, &cur));
         RNFUNC_CALL(ctx, RnRibRef(ctx, &tmp, &cur, 0));
         (void) ribbon_mr_input(&mctx, 
-                               (mrtoken*)tmp.value.as_bytevector,
+                               (mrtoken*)tmp.value.as_bytevector->buf,
                                MR_SECTOR_SIZE,
                                &readidx, &tokencnt, &has_hold,
                                (char*)bv->value.as_bytevector->buf + readidx,

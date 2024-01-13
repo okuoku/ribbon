@@ -170,12 +170,12 @@ typedef ssplit_token ssplit_pair[2];
 
 /* Normal context */
 static void
-ssplit_parse_byte0(ssplit_pair* out, int c){
+ssplit_parse_byte0(ssplit_pair out, int c){
     ssplit_byte_class bc;
     ssplit_token* a;
     ssplit_token* b;
-    a = &(*out[0]);
-    b = &(*out[1]);
+    a = &out[0];
+    b = &out[1];
     *a = TOK_others;
     *b = TOK_f;
     bc = to_ssplit_byte_class(c);
@@ -235,12 +235,12 @@ ssplit_parse_byte0(ssplit_pair* out, int c){
 }
 
 static void
-ssplit_parse_byte1(ssplit_pair* out, int c, ssplit_token prev_sym){
+ssplit_parse_byte1(ssplit_pair out, int c, ssplit_token prev_sym){
     ssplit_byte_class bc;
     ssplit_token* a;
     ssplit_token* b;
-    a = &(*out[0]);
-    b = &(*out[1]);
+    a = &out[0];
+    b = &out[1];
     *a = TOK_others;
     *b = TOK_f;
     bc = to_ssplit_byte_class(c);
@@ -299,12 +299,12 @@ ssplit_parse_byte1(ssplit_pair* out, int c, ssplit_token prev_sym){
 }
 
 static void
-ssplit_parse_byte2(ssplit_pair* out, int c, ssplit_token prev_sym){
+ssplit_parse_byte2(ssplit_pair out, int c, ssplit_token prev_sym){
     ssplit_byte_class bc;
     ssplit_token* a;
     ssplit_token* b;
-    a = &(*out[0]);
-    b = &(*out[1]);
+    a = &out[0];
+    b = &out[1];
     *a = TOK_others;
     *b = TOK_f;
     bc = to_ssplit_byte_class(c);
@@ -317,12 +317,12 @@ ssplit_parse_byte2(ssplit_pair* out, int c, ssplit_token prev_sym){
 
 /* String context */
 static void
-ssplit_instring_parse_byte0(ssplit_pair* out, int c){
+ssplit_instring_parse_byte0(ssplit_pair out, int c){
     ssplit_byte_class bc;
     ssplit_token* a;
     ssplit_token* b;
-    a = &(*out[0]);
-    b = &(*out[1]);
+    a = &out[0];
+    b = &out[1];
     *a = TOK_others;
     *b = TOK_f;
     bc = to_ssplit_byte_class(c);
@@ -347,12 +347,12 @@ ssplit_instring_parse_byte0(ssplit_pair* out, int c){
 }
 
 static void
-ssplit_instring_parse_byte1(ssplit_pair* out, int c, ssplit_token prev_sym){
+ssplit_instring_parse_byte1(ssplit_pair out, int c, ssplit_token prev_sym){
     ssplit_byte_class bc;
     ssplit_token* a;
     ssplit_token* b;
-    a = &(*out[0]);
-    b = &(*out[1]);
+    a = &out[0];
+    b = &out[1];
     *a = TOK_others;
     *b = TOK_f;
     bc = to_ssplit_byte_class(c);
@@ -374,12 +374,12 @@ ssplit_instring_parse_byte1(ssplit_pair* out, int c, ssplit_token prev_sym){
 
 /* Line comment context */
 static void
-ssplit_incomment_parse_byte0(ssplit_pair* out, int c){
+ssplit_incomment_parse_byte0(ssplit_pair out, int c){
     ssplit_byte_class bc;
     ssplit_token* a;
     ssplit_token* b;
-    a = &(*out[0]);
-    b = &(*out[1]);
+    a = &out[0];
+    b = &out[1];
     *a = TOK_others;
     *b = TOK_f;
     bc = to_ssplit_byte_class(c);
@@ -399,12 +399,12 @@ ssplit_incomment_parse_byte0(ssplit_pair* out, int c){
 }
 
 static void
-ssplit_incomment_parse_byte1(ssplit_pair* out, int c, ssplit_token prev_sym){
+ssplit_incomment_parse_byte1(ssplit_pair out, int c, ssplit_token prev_sym){
     ssplit_byte_class bc;
     ssplit_token* a;
     ssplit_token* b;
-    a = &(*out[0]);
-    b = &(*out[1]);
+    a = &out[0];
+    b = &out[1];
     *a = TOK_others;
     *b = TOK_f;
     bc = to_ssplit_byte_class(c);
@@ -421,12 +421,12 @@ ssplit_incomment_parse_byte1(ssplit_pair* out, int c, ssplit_token prev_sym){
 
 /* Block comment context */
 static void
-ssplit_inblockcomment_parse_byte0(ssplit_pair* out, int c){
+ssplit_inblockcomment_parse_byte0(ssplit_pair out, int c){
     ssplit_byte_class bc;
     ssplit_token* a;
     ssplit_token* b;
-    a = &(*out[0]);
-    b = &(*out[1]);
+    a = &out[0];
+    b = &out[1];
     *a = TOK_others;
     *b = TOK_f;
     bc = to_ssplit_byte_class(c);
@@ -452,13 +452,13 @@ ssplit_inblockcomment_parse_byte0(ssplit_pair* out, int c){
 }
 
 static void
-ssplit_inblockcomment_parse_byte1(ssplit_pair* out, 
+ssplit_inblockcomment_parse_byte1(ssplit_pair out, 
                                   int c, ssplit_token prev_sym){
     ssplit_byte_class bc;
     ssplit_token* a;
     ssplit_token* b;
-    a = &(*out[0]);
-    b = &(*out[1]);
+    a = &out[0];
+    b = &out[1];
     *a = TOK_others;
     *b = TOK_f;
     bc = to_ssplit_byte_class(c);
@@ -548,7 +548,6 @@ ribbon_mr_input(mrctx* ctx, mrtoken* tkn, size_t tkncnt,
                 int* out_readidx, int* out_outtkncnt, int* out_hold,
                 const char* buf, int len, int terminate){
 
-    size_t retidx = 0;
     size_t curidx = 0;
     int step_b;
     void* step_stream;
@@ -600,32 +599,32 @@ ribbon_mr_input(mrctx* ctx, mrtoken* tkn, size_t tkncnt,
             case MR_OBJ0:
             case MR_OBJ0xSHARP:
             case MR_OBJ0xDOT:
-                ssplit_parse_byte0(&p, step_b);
+                ssplit_parse_byte0(p, step_b);
                 break;
             case MR_OBJ1:
             case MR_OBJ1xSHARP:
-                ssplit_parse_byte1(&p, step_b, ctx->reg);
+                ssplit_parse_byte1(p, step_b, ctx->reg);
                 break;
             case MR_OBJ2:
-                ssplit_parse_byte2(&p, step_b, ctx->reg);
+                ssplit_parse_byte2(p, step_b, ctx->reg);
                 break;
             case MR_STRING0:
-                ssplit_instring_parse_byte0(&p, step_b);
+                ssplit_instring_parse_byte0(p, step_b);
                 break;
             case MR_STRING1:
-                ssplit_instring_parse_byte1(&p, step_b, ctx->reg);
+                ssplit_instring_parse_byte1(p, step_b, ctx->reg);
                 break;
             case MR_LINECOMMENT0:
-                ssplit_incomment_parse_byte0(&p, step_b);
+                ssplit_incomment_parse_byte0(p, step_b);
                 break;
             case MR_LINECOMMENT1:
-                ssplit_incomment_parse_byte1(&p, step_b, ctx->reg);
+                ssplit_incomment_parse_byte1(p, step_b, ctx->reg);
                 break;
             case MR_BLOCKCOMMENT0:
-                ssplit_inblockcomment_parse_byte0(&p, step_b);
+                ssplit_inblockcomment_parse_byte0(p, step_b);
                 break;
             case MR_BLOCKCOMMENT1:
-                ssplit_inblockcomment_parse_byte1(&p, step_b, ctx->reg);
+                ssplit_inblockcomment_parse_byte1(p, step_b, ctx->reg);
                 break;
             default:
                 abort();
@@ -663,7 +662,6 @@ ribbon_mr_input(mrctx* ctx, mrtoken* tkn, size_t tkncnt,
 
 #define MR_EMIT_TKN() \
         ctx->state = MR_Initial; \
-        retidx = curidx; \
         curidx ++;
 
 #define MR_END_HERE(tkn_type) \
