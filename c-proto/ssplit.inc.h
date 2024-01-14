@@ -719,7 +719,7 @@ ribbon_mr_input(mrctx* ctx, mrtoken* tkn, size_t tkncnt,
                         break;
                     case TOK_SHARP:
                         MR_SET_PREV_HERE(TOK_OBJ);
-                        MR_BEGIN_HERE(MR_OBJ1);
+                        MR_BEGIN_HERE(MR_OBJ1xSHARP);
                         break;
                     case TOK_DOT:
                         MR_SET_PREV_HERE(TOK_TURN_TO_PAIR);
@@ -791,6 +791,7 @@ ribbon_mr_input(mrctx* ctx, mrtoken* tkn, size_t tkncnt,
                             /* Hold a byte and restart with Initial/OBJ0 */
                             if(ctx->state == MR_OBJ1xSHARP &&
                                to_ssplit_byte_class(step_b) == BC_PAREN_L){
+                                MR_END_HERE(TOK_OBJ);
                             }else if(ssplit_byte_delimiter_p(step_b)){
                                 MR_END_PREV();
                                 MR_HOLD();

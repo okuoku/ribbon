@@ -132,11 +132,10 @@ enum mr_objtype_e {
 
 typedef enum mr_objtype_e mr_objtype;
 
-#define MRCMPX(k, n) (((me->end_index - me->start_index) >= n) \
+#define MRCMP(k, n) (((me->end_index - me->start_index) >= n) \
 && (memcmp(&buf[me->start_index], k, n) == 0))
 
-#define MRCMP1(k) (buf[me->start_index] == k[0])
-#define MRCMP(k, n) (n == 1) ? MRCMP1(k) : MRCMPX(k,n)
+#define MRCMP1(k) (buf[me->start_index] == k)
 
 static mr_objtype
 mr_realize_checkobjtype(const char* buf, mrtoken* me){
@@ -157,12 +156,12 @@ mr_realize_checkobjtype(const char* buf, mrtoken* me){
         return MO_NUMBER;
     }else if(MRCMP("#o", 2)){
         return MO_NUMBER;
-    }else if(MRCMP("0", 1) || MRCMP("1", 1) || MRCMP("2", 1) || 
-             MRCMP("3", 1) || MRCMP("4", 1) || MRCMP("5", 1) || 
-             MRCMP("6", 1) || MRCMP("7", 1) || MRCMP("8", 1) ||
-             MRCMP("9", 1)){
+    }else if(MRCMP1('0') || MRCMP1('1') || MRCMP1('2') || 
+             MRCMP1('3') || MRCMP1('4') || MRCMP1('5') || 
+             MRCMP1('6') || MRCMP1('7') || MRCMP1('8') ||
+             MRCMP1('9')){
         return MO_NUMBER;
-    }else if(MRCMP("+", 1) || MRCMP("-", 1)){
+    }else if(MRCMP1('+') || MRCMP1('-')){
         return MO_NUMBER;
     }else if(MRCMP("#vu8(", 5)){
         return MO_BYTEVECTOR_BEGIN;
@@ -402,49 +401,52 @@ endobj:
     if(mode == MM_ONE){
         RnValueRef(ctx, out, tmp.value, tmp.type);
     }else{
-        /* Reverse acc */
-        if(turn_to_pair){
-            if(turn_to_pair != objcnt){
-                abort();
-            }
-            RNFUNC_CALL(ctx, RnRibRef(ctx, &tmp, &acc, 0));
-            RNFUNC_CALL(ctx, RnRibRef(ctx, &acc, &acc, 1));
-            objcnt--;
-        }else{
-            RNFUNC_CALL(ctx, RnZone0(ctx, &tmp, ZZ_NIL));
-        }
-        for(i=0;i!=objcnt;i++){
-            RNFUNC_CALL(ctx, RnRibRef(ctx, &tmp2, &acc, 0));
-            RNFUNC_CALL(ctx, RnRibRef(ctx, &acc, &acc, 1));
-            RNFUNC_CALL(ctx, RnCons(ctx, &tmp, &tmp2, &tmp));
-        }
         /* Convert acc */
         switch(mode){
             case MM_FIRST:
             case MM_LIST:
+                /* Reverse acc */
+                if(turn_to_pair){
+                    if(turn_to_pair != objcnt){
+                        abort();
+                    }
+                    RNFUNC_CALL(ctx, RnRibRef(ctx, &tmp, &acc, 0));
+                    RNFUNC_CALL(ctx, RnRibRef(ctx, &acc, &acc, 1));
+                    objcnt--;
+                }else{
+                    RNFUNC_CALL(ctx, RnZone0(ctx, &tmp, ZZ_NIL));
+                }
+                for(i=0;i!=objcnt;i++){
+                    RNFUNC_CALL(ctx, RnRibRef(ctx, &tmp2, &acc, 0));
+                    RNFUNC_CALL(ctx, RnRibRef(ctx, &acc, &acc, 1));
+                    RNFUNC_CALL(ctx, RnCons(ctx, &tmp, &tmp2, &tmp));
+                }
                 RnValueRef(ctx, out, tmp.value, tmp.type);
                 break;
             case MM_VECTOR:
                 RNFUNC_CALL(ctx, RnVector(ctx, out, objcnt));
                 for(i=0;i!=objcnt;i++){
-                    RNFUNC_CALL(ctx, RnRibRef(ctx, &tmp2, &tmp, 0));
-                    RNFUNC_CALL(ctx, RnRibRef(ctx, &tmp, &tmp, 1));
-                    RNFUNC_CALL(ctx, RnVectorSet(ctx, out, &tmp2, i));
+                    RNFUNC_CALL(ctx, RnRibRef(ctx, &tmp2, &acc, 0));
+                    RNFUNC_CALL(ctx, RnRibRef(ctx, &acc, &acc, 1));
+                    RNFUNC_CALL(ctx, RnVectorSet(ctx, out, &tmp2, 
+                                                 objcnt - 1 - i));
                 }
                 break;
             case MM_BYTEVECTOR:
                 RNFUNC_CALL(ctx, RnBytevector(ctx, out, objcnt));
                 for(i=0;i!=objcnt;i++){
-                    RNFUNC_CALL(ctx, RnRibRef(ctx, &tmp2, &tmp, 0));
-                    RNFUNC_CALL(ctx, RnRibRef(ctx, &tmp, &tmp, 1));
+                    RNFUNC_CALL(ctx, RnRibRef(ctx, &tmp2, &acc, 0));
+                    RNFUNC_CALL(ctx, RnRibRef(ctx, &acc, &acc, 1));
                     if(tmp2.type != VT_INT64){
                         abort();
                     }
-                    out->value.as_bytevector->buf[i] = tmp.value.as_int64;
+                    out->value.as_bytevector->buf[objcnt - 1 - i] = 
+                        tmp2.value.as_int64;
                 }
                 break;
             default:
                 abort();
+                break;
         }
     }
     RnValueUnlink(ctx, &tmp2);
