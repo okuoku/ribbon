@@ -41,7 +41,7 @@ mr_realize_string(RnCtx* ctx, Value* out, mrtoken* me, const char* buf){
     if(can_fastpath){
         /* Drop double quote on the both ends */
         RNFUNC_CALL(ctx, RnString(ctx, out, &buf[me->start_index + 1],
-                                  me->end_index - me->start_index - 1));
+                                  me->end_index - me->start_index - 2));
     }else{
         tmpbuf = (char*)malloc(me->end_index - me->start_index);
         j = 0;
@@ -80,8 +80,8 @@ mr_realize_string(RnCtx* ctx, Value* out, mrtoken* me, const char* buf){
                 j++;
             }else{
                 tmpbuf[j] = buf[i];
+                j++;
             }
-            j++;
         }
         /* FIXME: Can cause leak */
         RNFUNC_CALL(ctx, RnString(ctx, out, tmpbuf, j));
