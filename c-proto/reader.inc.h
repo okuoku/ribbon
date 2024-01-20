@@ -488,8 +488,8 @@ ExUtf8Read(RnCtx* ctx, Value* out, Value* bv){
                                (mrtoken*)tmp.value.as_bytevector->buf,
                                MR_SECTOR_SIZE,
                                &readidx, &tokencnt, &has_hold,
-                               (char*)bv->value.as_bytevector->buf + readidx,
-                               bv->value.as_bytevector->len - readidx,
+                               (char*)bv->value.as_bytevector->buf,
+                               bv->value.as_bytevector->len,
                                1 /* terminate */);
         if(tokencnt == MR_SECTOR_SIZE){
             continue;

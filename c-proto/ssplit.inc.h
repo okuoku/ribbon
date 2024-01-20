@@ -545,7 +545,7 @@ ribbon_mr_init(mrctx* ctx){
 
 static int /* has error? */
 ribbon_mr_input(mrctx* ctx, mrtoken* tkn, size_t tkncnt,
-                int* out_readidx, int* out_outtkncnt, int* out_hold,
+                int* inout_readidx, int* out_outtkncnt, int* out_hold,
                 const char* buf, int len, int terminate){
 
     size_t curidx = 0;
@@ -555,7 +555,7 @@ ribbon_mr_input(mrctx* ctx, mrtoken* tkn, size_t tkncnt,
     ssplit_token step_prev_type;
 
     int do_terminate = terminate;
-    int read_index = 0;
+    int read_index = *inout_readidx;
     ssplit_pair p;
 
 
@@ -887,7 +887,7 @@ ribbon_mr_input(mrctx* ctx, mrtoken* tkn, size_t tkncnt,
     }
 
     /* output */
-    *out_readidx = read_index;
+    *inout_readidx = read_index;
     *out_outtkncnt = curidx;
     *out_hold = ctx->hold ? 1 : 0;
 
