@@ -162,7 +162,11 @@ mr_realize_checkobjtype(const char* buf, mrtoken* me){
              MRCMP1('9')){
         return MO_NUMBER;
     }else if(MRCMP1('+') || MRCMP1('-')){
-        return MO_NUMBER;
+        if(me->end_index - me->start_index == 1){
+            return MO_SYMBOL;
+        }else{
+            return MO_NUMBER;
+        }
     }else if(MRCMP("#vu8(", 5)){
         return MO_BYTEVECTOR_BEGIN;
     }else if(MRCMP("#u8(", 4)){
