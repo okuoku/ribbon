@@ -22,7 +22,7 @@ enum mr_realize_mode_e {
 typedef enum mr_realize_mode_e mr_realize_mode;
 
 #define MRSTRCMP(str) \
-    strncmp(buf + me->start_index, str, sizeof(str))
+    strncmp(buf + me->start_index, str, me->end_index - me->start_index)
 
 static RnResult
 mr_realize_string(RnCtx* ctx, Value* out, mrtoken* me, const char* buf){
