@@ -462,6 +462,7 @@ ExUtf8Read(RnCtx* ctx, Value* out, Value* bv){
     mrctx mctx;
     Value cur;
     Value tokens;
+    Value tokens_bak;
     Value tmp;
     int readidx;
     int tokencnt;
@@ -470,6 +471,7 @@ ExUtf8Read(RnCtx* ctx, Value* out, Value* bv){
     mrtoken* firstvec;
     int curidx;
     int totalidx;
+    RnValueLink(ctx, &tokens_bak);
     RnValueLink(ctx, &tokens);
     RnValueLink(ctx, &tmp);
     RnValueLink(ctx, &cur);
@@ -514,6 +516,8 @@ ExUtf8Read(RnCtx* ctx, Value* out, Value* bv){
             total_tokens += MR_SECTOR_SIZE;
         }
     }
+    /* Backup tokens (to keep reference during mr_realize_itr) */
+    RnValueRef(ctx, &tokens_bak, tokens.value, tokens.type);
 
     /* Pass3: Realize tokens */
     totalidx = 0;
@@ -529,5 +533,6 @@ ExUtf8Read(RnCtx* ctx, Value* out, Value* bv){
     RnValueUnlink(ctx, &cur);
     RnValueUnlink(ctx, &tmp);
     RnValueUnlink(ctx, &tokens);
+    RnValueUnlink(ctx, &tokens_bak);
     RNFUNC_END;
 }

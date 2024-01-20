@@ -662,7 +662,7 @@ ribbon_mr_input(mrctx* ctx, mrtoken* tkn, size_t tkncnt,
 
 #define MR_EMIT_TKN() \
         ctx->state = MR_Initial; \
-        curidx ++;
+        curidx ++
 
 #define MR_END_HERE(tkn_type) \
         MR_TKN_SET_START(tkn_type); \
