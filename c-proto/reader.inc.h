@@ -293,7 +293,6 @@ mr_realize_itr(RnCtx* ctx, Value* out, mr_realize_mode mode,
     RnValueLink(ctx, &acc);
     RnValueLink(ctx, &tmp);
     RnValueLink(ctx, &tmp2);
-    vec = *curvec;
     RNFUNC_CALL(ctx, RnZone0(ctx, &acc, ZZ_NIL));
     for(;;){
         if(*totalidx == total_tokens){
@@ -303,15 +302,17 @@ mr_realize_itr(RnCtx* ctx, Value* out, mr_realize_mode mode,
             goto endobj;
         }
         if(*curidx == MR_SECTOR_SIZE){
-            RNFUNC_CALL(ctx, RnRibRef(ctx, tokens, tokens, 1));
             RNFUNC_CALL(ctx, RnRibRef(ctx, &tmp, tokens, 0));
+            RNFUNC_CALL(ctx, RnRibRef(ctx, tokens, tokens, 1));
             vec = (mrtoken*)tmp.value.as_bytevector->buf;
             *curvec = vec;
             *curidx = 0;
         }
+        vec = *curvec;
         me = &vec[*curidx];
         *curidx += 1;
         *totalidx += 1;
+
 
 #define MMITR(next) \
         RNFUNC_CALL(ctx, mr_realize_itr(ctx, &tmp, next, curvec, curidx, \
