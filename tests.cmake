@@ -48,9 +48,6 @@ set(negativetestsrcs
     ${tests}/scheme/inexact3.sps 
     ${tests}/sibr/sibr0013.sps
 
-    # Run phase
-    ${tests}/scheme/qq0.sps # ???
-
     # fake syntax-rules
     ${tests}/scheme/synrule0.sps
     ${tests}/scheme/synrule1.sps
