@@ -2091,7 +2091,7 @@ call_lambda(RnCtx* ctx, struct vmstate_s* state){
     /* Construct rest argument on acc */
     RnZone0(ctx, &acc, ZZ_NIL);
 #ifdef TRACE
-    debugprintf("vals = %d, layout = %zd, argnc = %zd, nargs = %zd\n", 
+    debugprintf("vals = %d, layout = %d, argnc = %d, nargs = %d\n", 
             state->vals, layout, argnc, nargs);
 #endif
     for(res = argnc; res != 0; res--){
