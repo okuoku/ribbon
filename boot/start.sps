@@ -1,3 +1,4 @@
+;; FIXME: Add bundled bootstrap (see _immvm.sps)
 (import (yuni scheme)
         (yuni io drypack)
         (ribbon util ribcode)

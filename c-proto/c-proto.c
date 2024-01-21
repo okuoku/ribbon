@@ -2432,6 +2432,29 @@ RnVmRun(RnCtx* ctx, Value* out, Value* code){
     RNFUNC_END;
 }
 
+static RnResult
+RnVmRun_list(RnCtx* ctx, Value* code){
+    RNFUNC_BEGIN;
+    Value tmp;
+    Value queue;
+    Value bogus; /* We don't need actual VMrun result */
+    RnValueLink(ctx, &bogus);
+    RnValueLink(ctx, &tmp);
+    RnValueLink(ctx, &queue);
+
+    RnValueRef(ctx, &queue, code->value, code->type);
+    while(!(queue.type == VT_ZONE0 && queue.value.as_zone0 == ZZ_NIL)){
+        RnRibRef(ctx, &tmp, &queue, 0);
+        RnRibRef(ctx, &queue, &queue, 1);
+        RnVmRun(ctx, &bogus, &tmp);
+    }
+
+    RnValueUnlink(ctx, &queue);
+    RnValueUnlink(ctx, &tmp);
+    RnValueUnlink(ctx, &bogus);
+    RNFUNC_END;
+}
+
 static size_t
 read_vec_offset(RnCtx* ctx, Value* vec, size_t offs){
     Value tmp;
@@ -2512,6 +2535,34 @@ parse_ribcode(RnCtx* ctx, Value* code, Value* vec){
     RnLeave(ctx, &frame);
 }
 
+static void
+parse_ribcode_list(RnCtx* ctx, Value* out, Value* lis){
+    Value frame;
+    Value tmp;
+    Value obj;
+    Value acc;
+    RnEnter(ctx, &frame);
+    RnValueLink(ctx, &acc);
+    RnValueLink(ctx, &tmp);
+    RnValueLink(ctx, &obj);
+    RnValueRef(ctx, &tmp, lis->value, lis->type);
+    RnZone0(ctx, &acc, ZZ_NIL);
+
+    while(!(tmp.type == VT_ZONE0 && tmp.value.as_zone0 == ZZ_NIL)){
+        RnRibRef(ctx, &obj, &tmp, 0);
+        RnRibRef(ctx, &tmp, &tmp, 1);
+        parse_ribcode(ctx, &obj, &obj);
+        RnCons(ctx, &acc, &obj, &acc);
+    }
+    /* Reverse */
+    RnZone0(ctx, out, ZZ_NIL);
+    while(!(acc.type == VT_ZONE0 && acc.value.as_zone0 == ZZ_NIL)){
+        RnRibRef(ctx, &obj, &acc, 0);
+        RnRibRef(ctx, &acc, &acc, 1);
+        RnCons(ctx, out, &obj, out);
+    }
+    RnLeave(ctx, &frame);
+}
 
 static void
 parse_bootstrap(RnCtx* ctx){
@@ -2558,13 +2609,13 @@ parse_bootstrap(RnCtx* ctx){
         RnHashtableSet(ctx, &ctx->ht_libinfo, &libsym, &tmp);
         /* libcode */
         RnVectorRef(ctx, &tmp, &lib, 5);
-        parse_ribcode(ctx, &tmp, &tmp);
+        parse_ribcode_list(ctx, &tmp, &tmp);
         RnVectorSet(ctx, &lib, &tmp, 5); /* Write back unpacked ribcode */
         RnHashtableSet(ctx, &ctx->ht_libcode, &libsym, &tmp);
         /* mac* */
         RnVectorRef(ctx, &tmp, &lib, 7);
-        parse_ribcode(ctx, &tmp, &tmp);
-        RnVmRun(ctx, &tmp2, &tmp);
+        parse_ribcode_list(ctx, &tmp, &tmp);
+        RnVmRun_list(ctx, &tmp);
         RnVectorRef(ctx, &tmp, &lib, 6);
         while(1){
             if(tmp.type == VT_ZONE0 && tmp.value.as_zone0 == ZZ_NIL){
@@ -2601,7 +2652,7 @@ run_bootstrap(RnCtx* ctx){
         RnRibRef(ctx, &lib, &cur, 0);
         RnRibRef(ctx, &cur, &cur, 1);
         RnVectorRef(ctx, &code, &lib, 5);
-        RnVmRun(ctx, &out, &code);
+        RnVmRun_list(ctx, &code);
     }
 
     RnLeave(ctx, &frame);
