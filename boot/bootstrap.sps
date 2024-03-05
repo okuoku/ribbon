@@ -8,7 +8,6 @@
 
 (define YUNIROOT #f)
 (define RUNTIMEROOT #f)
-(define source #f)
 (define bootstrapfile #f)
 (define bootstrapsave #f)
 (define *command-line* (vector->list ($$command-line 0)))
@@ -52,8 +51,10 @@
          (set! *command-line* (cdr d))
          (consume-arguments!))
         (else
-          (set! source a)
-          (set! *command-line* d))))))
+          (when (pair? d)
+            ;; Ignore unrecognized
+            (set! *command-line* d)
+            (consume-arguments!)))))))
 
 (define (savedump! obj)
   (define (testentry e)
@@ -70,12 +71,8 @@
   (let ((p (open-binary-output-file bootstrapsave)))
    (write (list 'DRYPACK...)) (newline)
    (drypack-put p obj)
-   (write (list 'SAVING... source '=> bootstrapsave)) (newline)
+   (write (list 'SAVING... bootstrapfile '=> bootstrapsave)) (newline)
    (close-port p)))
-
-;; Initialize VM
-
-($vm-exit 3 raise)
 
 ;; Initialize runtime environment
 
@@ -117,23 +114,7 @@
      'FIXME ;; FIXME: Compiler bug?
      ))
   (else ;; Standard boot
-
-    (unless source
-      (write (list 'FILE-REQUIRED)) (newline)
-      (exit 1))
-
-    ;; Check source
-    (unless (file-exists? source)
-      (write (list 'FILE-NOT-FOUND: source)) (newline)
-      (exit 1))
-
-    (interp-reset!)
-    (interp-set-libpath! (reverse libpath))
-    (interp-activate!)
-
-    (write (list 'STARTING...: source)) (newline)
-    (let ((bundle (interp-gen-bundle #t source)))
-     (write (list 'INTERP...)) (newline)
-     (interp-run bundle))
-
-    (write (list 'DONE.)) (newline)))
+    (write (list 'INVALID-ARGS)) (newline)
+    (exit 1)
+     'FIXME ;; FIXME: Compiler bug?
+    ))

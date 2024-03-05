@@ -61,53 +61,47 @@ function(brand tgt)
     endif()
 endfunction()
 
-function(add_ribbon prefix)
-    add_executable(${prefix}
+# Global definitions
+add_compile_definitions(
+    -DYUNIROOT=\"${WITH_YUNI}\"
+    -DRUNTIMEROOT=\"${WITH_RUNTIME}\"
+    -DBUILDROOT=\"${CMAKE_CURRENT_BINARY_DIR}\")
+
+function(add_ribbon_c tgt)
+    add_executable(${tgt}
         c-proto/nccc-dummy.c
         c-proto/c-proto.c)
-    add_executable(${prefix}-cxx
+    maxwarn(${tgt})
+    brand(${tgt})
+endfunction()
+
+function(add_ribbon_cxx tgt)
+    add_executable(${tgt}
         c-proto/nccc-dummy.c
         cxx-proto/cxx-proto.cpp)
-    maxwarn(${prefix})
-    brand(${prefix})
-    maxwarn(${prefix}-cxx)
-    brand(${prefix}-cxx)
+    maxwarn(${tgt})
+    brand(${tgt})
 endfunction()
 
 # bootstrap-ribbon{-cxx} : Ribbon => Ribbon bootstrap (uses dump.bin)
 # ribbon{-cxx} : Final executable (uses riboot.bin)
 
 if(USE_FULL_BOOTSTRAP)
-    add_ribbon(bootstrap-ribbon)
+    add_ribbon_c(bootstrap-ribbon)
     target_compile_definitions(bootstrap-ribbon
         PRIVATE
-        -DYUNIROOT=\"${WITH_YUNI}\"
-        -DRUNTIMEROOT=\"${WITH_RUNTIME}\"
-        -DBUILDROOT=\"${CMAKE_CURRENT_BINARY_DIR}\"
-        -DBOOTNAME=\"dump.bin\")
-
-    target_compile_definitions(bootstrap-ribbon-cxx
-        PRIVATE
-        -DYUNIROOT=\"${WITH_YUNI}\"
-        -DRUNTIMEROOT=\"${WITH_RUNTIME}\"
-        -DBUILDROOT=\"${CMAKE_CURRENT_BINARY_DIR}\"
         -DBOOTNAME=\"dump.bin\")
 endif()
 
-add_ribbon(ribbon)
+add_ribbon_c(ribbon)
+add_ribbon_cxx(ribbon-cxx)
 
 target_compile_definitions(ribbon
     PRIVATE
-    -DYUNIROOT=\"${WITH_YUNI}\"
-    -DRUNTIMEROOT=\"${WITH_RUNTIME}\"
-    -DBUILDROOT=\"${CMAKE_CURRENT_BINARY_DIR}\"
     -DBOOTNAME=\"riboot.bin\")
 
 target_compile_definitions(ribbon-cxx
     PRIVATE
-    -DYUNIROOT=\"${WITH_YUNI}\"
-    -DRUNTIMEROOT=\"${WITH_RUNTIME}\"
-    -DBUILDROOT=\"${CMAKE_CURRENT_BINARY_DIR}\"
     -DBOOTNAME=\"riboot.bin\")
 
 # Runtime BLOB
@@ -144,11 +138,14 @@ elseif(USE_FULL_BOOTSTRAP)
     add_custom_command(OUTPUT ${bootstrapfile}
         COMMAND
         bootstrap-ribbon
+        ${CMAKE_CURRENT_LIST_DIR}/boot/bootstrap.sps
         -bootstrapsave ${bootstrapfile}
         -bootstrapfile ${CMAKE_CURRENT_LIST_DIR}/boot/start.sps
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
         DEPENDS ${yunifiles} ${runtimefiles}
-        ${bootstrapfile0} ${CMAKE_CURRENT_LIST_DIR}/boot/start.sps)
+        ${bootstrapfile0} 
+        ${CMAKE_CURRENT_LIST_DIR}/boot/start.sps
+        ${CMAKE_CURRENT_LIST_DIR}/boot/bootstrap.sps)
 else()
     message(FATAL_ERROR "Unimplemented.")
 endif()
