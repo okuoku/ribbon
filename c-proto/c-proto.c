@@ -2744,7 +2744,7 @@ RnCtxRunBootstrap(RnCtx* ctx, const uint8_t* bootstrap){
 
 #ifndef RN_EMBEDDING
 /* main */
-static const char* bootfile = BUILDROOT "/dump.bin";
+static const char* bootfile = BUILDROOT "/" BOOTNAME;
 
 int
 main(int ac, char** av){

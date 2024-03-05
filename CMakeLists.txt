@@ -1,10 +1,10 @@
 cmake_minimum_required(VERSION 3.12) # CONFIGURE_DEPENDS
 project(ribbon C CXX)
 
-if(WITH_PREBOOT)
-    # Do nothing
-elseif(NOT YUNI_WITH_YUNIBASE)
-    message(FATAL_ERROR "Ribbon requires yunibase to generate bootstrap.")
+if(USE_FULL_BOOTSTRAP)
+    if(NOT YUNI_WITH_YUNIBASE)
+        message(FATAL_ERROR "Ribbon requires yunibase to generate bootstrap.")
+    endif()
 endif()
 
 if(NOT WITH_YUNI)
@@ -39,40 +39,7 @@ foreach(e ${runtime_runtimepath})
     list(APPEND runtimefiles ${globfiles})
 endforeach()
 
-# Runtime BLOB
-set(bootstrapfile ${CMAKE_CURRENT_BINARY_DIR}/dump.bin)
-if(WITH_PREBOOT)
-    add_custom_command(OUTPUT ${bootstrapfile}
-        COMMAND
-        ${CMAKE_COMMAND} -E copy
-        ${WITH_PREBOOT} ${bootstrapfile}
-        DEPENDS ${WITH_PREBOOT})
-
-else()
-    add_subdirectory(${WITH_YUNI} yuni)
-
-    add_custom_command(OUTPUT ${bootstrapfile}
-        COMMAND
-        ${CMAKE_COMMAND} 
-        -DROOT=${WITH_YUNI} 
-        -DYUNIBUILD=${CMAKE_CURRENT_BINARY_DIR}/yuni 
-        -DIMPL=gauche 
-        -P ${WITH_RUNTIME}/_run.cmake 
-        COMPILE
-        ${CMAKE_CURRENT_LIST_DIR}/boot/start.sps
-        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-        DEPENDS ${yunifiles} ${runtimefiles}
-        ${WITH_RUNTIME}/_run.cmake
-        ${WITH_RUNTIME}/_immvm.sps
-        ${CMAKE_CURRENT_LIST_DIR}/boot/start.sps
-        )
-endif()
-
-add_custom_target(bootstrapblob ALL
-    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/dump.bin )
-
 # Interpreter(C, C++)
-
 function(maxwarn tgt)
     if(MSVC)
         #target_compile_options(${tgt} PRIVATE /W4 /WX)
@@ -94,23 +61,99 @@ function(brand tgt)
     endif()
 endfunction()
 
-add_definitions(
+function(add_ribbon prefix)
+    add_executable(${prefix}
+        c-proto/nccc-dummy.c
+        c-proto/c-proto.c)
+    add_executable(${prefix}-cxx
+        c-proto/nccc-dummy.c
+        cxx-proto/cxx-proto.cpp)
+    maxwarn(${prefix})
+    brand(${prefix})
+    maxwarn(${prefix}-cxx)
+    brand(${prefix}-cxx)
+endfunction()
+
+# bootstrap-ribbon{-cxx} : Ribbon => Ribbon bootstrap (uses dump.bin)
+# ribbon{-cxx} : Final executable (uses riboot.bin)
+
+if(USE_FULL_BOOTSTRAP)
+    add_ribbon(bootstrap-ribbon)
+    target_compile_definitions(bootstrap-ribbon
+        PRIVATE
+        -DYUNIROOT=\"${WITH_YUNI}\"
+        -DRUNTIMEROOT=\"${WITH_RUNTIME}\"
+        -DBUILDROOT=\"${CMAKE_CURRENT_BINARY_DIR}\"
+        -DBOOTNAME=\"dump.bin\")
+
+    target_compile_definitions(bootstrap-ribbon-cxx
+        PRIVATE
+        -DYUNIROOT=\"${WITH_YUNI}\"
+        -DRUNTIMEROOT=\"${WITH_RUNTIME}\"
+        -DBUILDROOT=\"${CMAKE_CURRENT_BINARY_DIR}\"
+        -DBOOTNAME=\"dump.bin\")
+endif()
+
+add_ribbon(ribbon)
+
+target_compile_definitions(ribbon
+    PRIVATE
     -DYUNIROOT=\"${WITH_YUNI}\"
     -DRUNTIMEROOT=\"${WITH_RUNTIME}\"
-    -DBUILDROOT=\"${CMAKE_CURRENT_BINARY_DIR}\")
+    -DBUILDROOT=\"${CMAKE_CURRENT_BINARY_DIR}\"
+    -DBOOTNAME=\"riboot.bin\")
 
-add_executable(proto
-    c-proto/nccc-dummy.c
-    c-proto/c-proto.c)
+target_compile_definitions(ribbon-cxx
+    PRIVATE
+    -DYUNIROOT=\"${WITH_YUNI}\"
+    -DRUNTIMEROOT=\"${WITH_RUNTIME}\"
+    -DBUILDROOT=\"${CMAKE_CURRENT_BINARY_DIR}\"
+    -DBOOTNAME=\"riboot.bin\")
 
-add_executable(protoxx
-    c-proto/nccc-dummy.c
-    cxx-proto/cxx-proto.cpp)
+# Runtime BLOB
+set(bootstrapfile0 ${CMAKE_CURRENT_BINARY_DIR}/dump.bin)
+set(bootstrapfile ${CMAKE_CURRENT_BINARY_DIR}/riboot.bin)
+if(WITH_PREBOOT)
+    add_custom_command(OUTPUT ${bootstrapfile}
+        COMMAND
+        ${CMAKE_COMMAND} -E copy
+        ${WITH_PREBOOT} ${bootstrapfile}
+        DEPENDS ${WITH_PREBOOT})
 
-maxwarn(proto)
-maxwarn(protoxx)
-brand(proto)
-brand(protoxx)
+elseif(USE_FULL_BOOTSTRAP)
+    add_subdirectory(${WITH_YUNI} yuni)
+
+    # Bootstrap0
+    add_custom_command(OUTPUT ${bootstrapfile0}
+        COMMAND
+        ${CMAKE_COMMAND} 
+        -DROOT=${WITH_YUNI} 
+        -DYUNIBUILD=${CMAKE_CURRENT_BINARY_DIR}/yuni 
+        -DIMPL=gauche 
+        -P ${WITH_RUNTIME}/_run.cmake 
+        COMPILE
+        ${CMAKE_CURRENT_LIST_DIR}/boot/start.sps
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+        DEPENDS ${yunifiles} ${runtimefiles}
+        ${WITH_RUNTIME}/_run.cmake
+        ${WITH_RUNTIME}/_immvm.sps
+        ${CMAKE_CURRENT_LIST_DIR}/boot/start.sps
+        )
+
+    # Bootstrap
+    add_custom_command(OUTPUT ${bootstrapfile}
+        COMMAND
+        bootstrap-ribbon
+        -bootstrapsave ${bootstrapfile}
+        -bootstrapfile ${CMAKE_CURRENT_LIST_DIR}/boot/start.sps
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+        DEPENDS ${yunifiles} ${runtimefiles}
+        ${bootstrapfile0} ${CMAKE_CURRENT_LIST_DIR}/boot/start.sps)
+else()
+    message(FATAL_ERROR "Unimplemented.")
+endif()
+
+add_custom_target(bootstrapblob ALL DEPENDS ${bootstrapfile})
 
 # Tests
 
