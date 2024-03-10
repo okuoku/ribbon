@@ -91,13 +91,17 @@ endfunction()
 
 function(add_scm_test nam fil turnfail)
     # Base
-    add_test(NAME BASE-${nam}
-        COMMAND ${CMAKE_COMMAND}
-        -DROOT=${WITH_YUNI}
-        -DYUNIBUILD=${CMAKE_CURRENT_BINARY_DIR}/yuni
-        -DIMPL=gauche
-        -Dinput=${f}
-        -P ${WITH_RUNTIME}/_testrun.cmake)
+    if(USE_YUNIBASE)
+        add_test(NAME BASE-${nam}
+            COMMAND ${CMAKE_COMMAND}
+            -DROOT=${WITH_YUNI}
+            -DYUNIBUILD=${CMAKE_CURRENT_BINARY_DIR}/yuni
+            -DIMPL=gauche
+            -Dinput=${f}
+            -P ${WITH_RUNTIME}/_testrun.cmake)
+        set_tests_properties(BASE-${nam}
+            PROPERTIES WILL_FAIL ${turnfail})
+    endif()
 
     ## interp
     #add_test(NAME EMUL-${nam}
@@ -109,8 +113,6 @@ function(add_scm_test nam fil turnfail)
     #    -Dinput=${f}
     #    -P ${WITH_RUNTIME}/_testrun.cmake)
 
-    set_tests_properties(BASE-${nam}
-        PROPERTIES WILL_FAIL ${turnfail})
     #set_tests_properties(BASE-${nam} EMUL-${nam}
     #    PROPERTIES WILL_FAIL ${turnfail})
 endfunction()

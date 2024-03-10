@@ -14,6 +14,12 @@ if(NOT WITH_RUNTIME)
     message(FATAL_ERROR "Ribbon requires WITH_RUNTIME to build.")
 endif()
 
+if(RIBBON_SNAPSHOT_BUILD)
+    message(STATUS "(This is RIBBON_SNAPSHOT_BUILD)")
+    set(RIBBON_SKIP_TESTS ON)
+    set(USE_SNAPSHOT_BOOTSTRAP OFF)
+endif()
+
 file(TO_CMAKE_PATH "${WITH_YUNI}" WITH_YUNI)
 file(TO_CMAKE_PATH "${WITH_RUNTIME}" WITH_RUNTIME)
 
@@ -62,7 +68,7 @@ function(brand tgt)
 endfunction()
 
 # Global definitions
-add_compile_definitions(
+set(ribbondefs
     -DYUNIROOT=\"${WITH_YUNI}\"
     -DRUNTIMEROOT=\"${WITH_RUNTIME}\"
     -DBUILDROOT=\"${CMAKE_CURRENT_BINARY_DIR}\")
@@ -90,30 +96,57 @@ if(USE_FULL_BOOTSTRAP)
     add_ribbon_c(bootstrap-ribbon)
     target_compile_definitions(bootstrap-ribbon
         PRIVATE
+        ${ribbondefs}
         -DBOOTNAME=\"dump.bin\")
 endif()
 
-add_ribbon_c(ribbon)
-add_ribbon_cxx(ribbon-cxx)
+if(RIBBON_SNAPSHOT_BUILD)
+    set(ribbontgt snapshot-ribbon)
+    set(ribboncxxtgt)
+else()
+    set(ribbontgt ribbon)
+    set(ribboncxxtgt ribbon-cxx)
+endif()
 
-target_compile_definitions(ribbon
+add_ribbon_c(${ribbontgt})
+target_compile_definitions(${ribbontgt}
     PRIVATE
+    ${ribbondefs}
     -DBOOTNAME=\"riboot.bin\")
 
-target_compile_definitions(ribbon-cxx
-    PRIVATE
-    -DBOOTNAME=\"riboot.bin\")
+if(ribboncxxtgt)
+    add_ribbon_cxx(${ribboncxxtgt})
+    target_compile_definitions(ribbon-cxx
+        PRIVATE
+        ${ribbondefs}
+        -DBOOTNAME=\"riboot.bin\")
+endif()
 
 # Runtime BLOB
 set(bootstrapfile0 ${CMAKE_CURRENT_BINARY_DIR}/dump.bin)
 set(bootstrapfile ${CMAKE_CURRENT_BINARY_DIR}/riboot.bin)
-if(WITH_PREBOOT)
+if(WITH_RIBBON_PREBOOT)
     add_custom_command(OUTPUT ${bootstrapfile}
         COMMAND
         ${CMAKE_COMMAND} -E copy
-        ${WITH_PREBOOT} ${bootstrapfile}
-        DEPENDS ${WITH_PREBOOT})
+        ${WITH_RIBBON_PREBOOT} ${bootstrapfile}
+        DEPENDS ${WITH_RIBBON_PREBOOT})
+elseif(USE_SNAPSHOT_BOOTSTRAP)
+    set(WITH_RIBBON_PREBOOT ${WITH_RIBBON_SNAPSHOT}/riboot.bin)
+    set(RIBBON_SNAPSHOT_BUILD ON)
+    add_subdirectory(${WITH_RIBBON_SNAPSHOT}/ribbon snapshot-build)
 
+    # Bootstrap
+    add_custom_command(OUTPUT ${bootstrapfile}
+        COMMAND snapshot-ribbon
+        ${CMAKE_CURRENT_LIST_DIR}/boot/bootstrap.sps
+        -bootstrapsave ${bootstrapfile}
+        -bootstrapfile ${CMAKE_CURRENT_LIST_DIR}/boot/start.sps
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+        DEPENDS ${yunifiles} ${runtimefiles}
+        ${WITH_RIBBON_PREBOOT} 
+        ${CMAKE_CURRENT_LIST_DIR}/boot/start.sps
+        ${CMAKE_CURRENT_LIST_DIR}/boot/bootstrap.sps)
 elseif(USE_FULL_BOOTSTRAP)
     add_subdirectory(${WITH_YUNI} yuni)
 
@@ -131,8 +164,7 @@ elseif(USE_FULL_BOOTSTRAP)
         DEPENDS ${yunifiles} ${runtimefiles}
         ${WITH_RUNTIME}/_run.cmake
         ${WITH_RUNTIME}/_immvm.sps
-        ${CMAKE_CURRENT_LIST_DIR}/boot/start.sps
-        )
+        ${CMAKE_CURRENT_LIST_DIR}/boot/start.sps)
 
     # Bootstrap
     add_custom_command(OUTPUT ${bootstrapfile}
@@ -150,7 +182,7 @@ else()
     message(FATAL_ERROR "Unimplemented.")
 endif()
 
-add_custom_target(bootstrapblob ALL DEPENDS ${bootstrapfile})
+add_custom_target(${ribbontgt}-bootfile ALL DEPENDS ${bootstrapfile})
 
 # Tests
 
@@ -159,10 +191,13 @@ if(NOT RIBBON_SKIP_TESTS)
 endif()
 
 # Integration helpers
-if(RIBBON_INTEG_BUILD_DIR)
-    message(STATUS "Generating bootstrap files on ${RIBBON_INTEG_BUILD_DIR}")
-    # Dep list
-    file(WRITE ${RIBBON_INTEG_BUILD_DIR}/deps.cmake "set(yunideps_srcs ${yunifiles};${runtimefiles})\n")
-    file(WRITE ${RIBBON_INTEG_BUILD_DIR}/bootstrap_params.cmake
-        "set(WITH_RUNTIME \"${WITH_RUNTIME}\")\nset(ROOT \"${WITH_YUNI}\")\nset(IMPL gauche)\n\nset(WITH_YUNI \"${WITH_YUNI}\")\nset(BUILDROOT \"${CMAKE_CURRENT_BINARY_DIR}\")\n")
+if(NOT RIBBON_SNAPSHOT_BUILD)
+    if(RIBBON_INTEG_BUILD_DIR)
+        message(STATUS "Generating bootstrap files on ${RIBBON_INTEG_BUILD_DIR}")
+        # Dep list
+        file(WRITE ${RIBBON_INTEG_BUILD_DIR}/deps.cmake "set(yunideps_srcs ${yunifiles};${runtimefiles})\n")
+        file(WRITE ${RIBBON_INTEG_BUILD_DIR}/bootstrap_params.cmake
+            "set(WITH_RUNTIME \"${WITH_RUNTIME}\")\nset(ROOT \"${WITH_YUNI}\")\nset(IMPL gauche)\n\nset(WITH_YUNI \"${WITH_YUNI}\")\nset(BUILDROOT \"${CMAKE_CURRENT_BINARY_DIR}\")\n")
+    endif()
 endif()
+
