@@ -126,7 +126,11 @@ endif()
 set(bootstrapfile0 ${CMAKE_CURRENT_BINARY_DIR}/dump.bin)
 set(bootstrapfile ${CMAKE_CURRENT_BINARY_DIR}/riboot.bin)
 if(WITH_RIBBON_PREBOOT)
-    add_custom_command(OUTPUT ${bootstrapfile}
+    # Use PRE_BUILD so we can ensure built ${ribbontgt} properly bootstrapped
+    # when it used on secondary bootstrap
+    add_custom_command(
+        TARGET ${ribbontgt} PRE_BUILD
+        BYPRODUCTS ${bootstrapfile}
         COMMAND
         ${CMAKE_COMMAND} -E copy
         ${WITH_RIBBON_PREBOOT} ${bootstrapfile}
