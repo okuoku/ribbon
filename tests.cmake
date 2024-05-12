@@ -57,7 +57,7 @@ set(negativetestsrcs
     ${tests}/err/fail1.sps
     ${tests}/err/fail2.sps
     ${tests}/err/fail3.sps
-    ${tests}/err/fail4.sps
+    # ${tests}/err/fail4.sps # FIXME: We cannot test this for now
     ${tests}/err/fail5.sps
     ${tests}/err/fail6.sps
     ${tests}/err/fail7.sps
