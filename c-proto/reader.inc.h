@@ -26,7 +26,7 @@ typedef enum mr_realize_mode_e mr_realize_mode;
 
 static RnResult
 mr_realize_string(RnCtx* ctx, Value* out, mrtoken* me, const char* buf){
-    int i,j;
+    size_t i,j;
     int can_fastpath = 1;
     char* tmpbuf;
     RNFUNC_BEGIN;
@@ -468,8 +468,8 @@ ExUtf8Read(RnCtx* ctx, Value* out, Value* bv){
     Value tokens;
     Value tokens_bak;
     Value tmp;
-    int readidx;
-    int tokencnt;
+    size_t readidx;
+    size_t tokencnt;
     int total_tokens;
     int has_hold;
     mrtoken* firstvec;

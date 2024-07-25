@@ -1197,13 +1197,14 @@ ExVectorToString(RnCtx* ctx, int argc, Value* stack){
 }
 
 static RnResult
-list_to_vector(RnCtx* ctx, Value* out, Value* lis, int skip, int limit){
+list_to_vector(RnCtx* ctx, Value* out, Value* lis, size_t skip, size_t limit){
     RNFUNC_BEGIN;
     Value input;
     Value tmp;
     ObjString* str;
     ValueContainer v;
-    int i,c;
+    size_t i;
+    int c;
     size_t siz;
     char* s;
     char* p;
@@ -3966,7 +3967,7 @@ ExBvSetEx_s32(RnCtx* ctx, Value* out, Value* bv, Value* off, Value* d){
         }
     }
     vp = (int32_t*)&bv->value.as_bytevector->buf[e];
-    *vp = d->value.as_int64;
+    *vp = (int32_t)d->value.as_int64; /* FIXME: Test overflow */
     RNFUNC_CALL(ctx, to_bool(ctx, out, 1));
     RNFUNC_END;
 }
@@ -4070,7 +4071,7 @@ ExBvSetEx_u32(RnCtx* ctx, Value* out, Value* bv, Value* off, Value* d){
         }
     }
     vp = (uint32_t*)&bv->value.as_bytevector->buf[e];
-    *vp = d->value.as_int64;
+    *vp = (uint32_t) d->value.as_int64; /* FIXME: Test overflow */
     RNFUNC_CALL(ctx, to_bool(ctx, out, 1));
     RNFUNC_END;
 }

@@ -506,17 +506,17 @@ struct mrctx_s {
     ssplit_token reg;
     int hold;
     void* hold_stream;
-    int hold_index;
+    size_t hold_index;
     int lineno;
     int column;
     int blockcomment_depth;
     void* start_stream;
-    int start_index;
+    size_t start_index;
     int start_lineno;
     int start_column;
     ssplit_token prev_type;
     void* prev_stream;
-    int prev_index;
+    size_t prev_index;
     int prev_lineno;
     int prev_column;
 };
@@ -524,10 +524,10 @@ struct mrctx_s {
 typedef struct mrctx_s mrctx;
 
 struct mrtoken_s {
-    int start_index;
+    size_t start_index;
     int start_lineno;
     int start_column;
-    int end_index;
+    size_t end_index;
     int end_lineno;
     int end_column;
     ssplit_token type;
@@ -545,17 +545,17 @@ ribbon_mr_init(mrctx* ctx){
 
 static int /* has error? */
 ribbon_mr_input(mrctx* ctx, mrtoken* tkn, size_t tkncnt,
-                int* inout_readidx, int* out_outtkncnt, int* out_hold,
-                const char* buf, int len, int terminate){
+                size_t* inout_readidx, size_t* out_outtkncnt, int* out_hold,
+                const char* buf, size_t len, int terminate){
 
     size_t curidx = 0;
     int step_b;
     void* step_stream;
-    int step_index;
+    size_t step_index;
     ssplit_token step_prev_type;
 
     int do_terminate = terminate;
-    int read_index = *inout_readidx;
+    size_t read_index = *inout_readidx;
     ssplit_pair p;
 
 
