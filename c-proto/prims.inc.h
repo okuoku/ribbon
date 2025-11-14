@@ -4194,7 +4194,7 @@ ExNcccCall(RnCtx* ctx, Value* out, Value* funcptr,
         abort();
     }
 
-    func = (NcccFunc) funcptr->value.as_int64;
+    func = (NcccFunc) (uintptr_t)funcptr->value.as_int64;
     argin = (uint64_t*)(inbv->value.as_bytevector->buf + 
                         inoff->value.as_int64);
     argout = (uint64_t*)(outbv->value.as_bytevector->buf + 

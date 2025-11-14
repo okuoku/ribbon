@@ -2267,7 +2267,7 @@ call_primitive(RnCtx* ctx, struct vmstate_s* state,
             }
             break;
         case 1: /* external primitives */
-            call_vmex(ctx, state, (RnVmExFunc)ident);
+            call_vmex(ctx, state, (RnVmExFunc)(uintptr_t)ident);
             break;
         default:
             abort();
